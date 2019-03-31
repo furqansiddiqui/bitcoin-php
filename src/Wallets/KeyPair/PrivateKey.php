@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
+use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
+use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\DataTypes\Binary;
 
 /**
  * Class PrivateKey
@@ -22,6 +25,29 @@ use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
  */
 class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
 {
+    /** @var AbstractBitcoinNode */
+    private $node;
+
+    /**
+     * PrivateKey constructor.
+     * @param AbstractBitcoinNode $node
+     * @param Binary $entropy
+     * @param ExtendedKeyInterface|null $extendedKey
+     */
+    public function __construct(AbstractBitcoinNode $node, Binary $entropy, ?ExtendedKeyInterface $extendedKey = null)
+    {
+        $this->node = $node;
+        parent::__construct($entropy, $extendedKey);
+    }
+
+    /**
+     * @return AbstractBitcoinNode
+     */
+    public function node(): AbstractBitcoinNode
+    {
+        return $this->node;
+    }
+
     /**
      * @return PublicKey
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
