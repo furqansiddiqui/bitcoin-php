@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Wallets;
 
 use FurqanSiddiqui\BIP39\Mnemonic;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\DataTypes\Base16;
 use FurqanSiddiqui\DataTypes\Binary;
@@ -37,6 +38,30 @@ class KeyPairFactory
     public function __construct(AbstractBitcoinNode $node)
     {
         $this->node = $node;
+    }
+
+    /**
+     * @param int|null $bits
+     * @return PrivateKey
+     * @throws KeyPairException
+     */
+    public function generateSecurePrivateKey(?int $bits = null): PrivateKey
+    {
+        $byteLength = 32; // Generates 256 bit of Entropy by default
+        $bitwiseLength = $bits ?? $this->node->const_private_key_bits;
+        if (is_int($bitwiseLength)) {
+            $byteLength = $bitwiseLength / 8;
+        }
+
+        try {
+            $randomBytes = random_bytes($byteLength);
+        } catch (\Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            throw new KeyPairException('Failed to generate cryptographically secure pseudo-random bytes');
+        }
+
+        $entropy = new Binary($randomBytes);
+        return new PrivateKey($this->node, $entropy, null);
     }
 
     /**
