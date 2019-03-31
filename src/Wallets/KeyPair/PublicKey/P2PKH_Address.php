@@ -49,6 +49,21 @@ class P2PKH_Address implements PaymentAddressInterface
     }
 
     /**
+     * @param int|null $prefix
+     * @return P2SH_Address
+     * @throws AddressGenerateException
+     */
+    public function p2sh(?int $prefix = null): P2SH_Address
+    {
+        $prefix = $prefix ?? $this->publicKey->privateKey()->node()->const_p2sh_prefix;
+        if (!is_int($prefix)) {
+            throw new AddressGenerateException('P2SH prefix constant not defined');
+        }
+
+        return new P2SH_Address($this, $prefix);
+    }
+
+    /**
      * @param int $prefix
      * @return P2PKH_Address
      * @throws AddressGenerateException
