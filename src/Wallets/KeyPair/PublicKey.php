@@ -44,12 +44,13 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     }
 
     /**
+     * @param int|null $prefix
      * @return P2PKH_Address
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\AddressGenerateException
+     * @throws AddressGenerateException
      */
-    public function p2pkh(): P2PKH_Address
+    public function p2pkh(?int $prefix = null): P2PKH_Address
     {
-        $prefix = $this->privateKey->node()->const_p2pkh_prefix;
+        $prefix = $prefix ?? $this->privateKey->node()->const_p2pkh_prefix;
         if (!is_int($prefix)) {
             throw new AddressGenerateException('P2PKH constant not defined');
         }
