@@ -24,6 +24,8 @@ abstract class BitcoinNetworkConstants
     public const NAME = null;
     /** @var int Number of decimals/scale */
     public const DECIMALS = null;
+    /** @var int|null Bitwise length of Private key entropy, (set NULL for any) */
+    public const PRIVATE_KEY_BITS = 256;
 
     /**
      *  Address Prefixes
@@ -48,9 +50,9 @@ abstract class BitcoinNetworkConstants
     /** @var string HMAC key for BIP32 master seed */
     public const BIP32_SEED_KEY = null;
     /** @var int BIP32 private keys prefix */
-    public const BIP32_PRIVATE = null;
+    public const BIP32_PRIVATE_PREFIX = null;
     /** @var int BIP32 public keys prefix */
-    public const BIP32_PUBLIC = null;
+    public const BIP32_PUBLIC_PREFIX = null;
 
     /**
      * BIP44 Constants
