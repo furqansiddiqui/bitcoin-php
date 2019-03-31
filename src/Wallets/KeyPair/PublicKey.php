@@ -17,6 +17,7 @@ namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 use FurqanSiddiqui\BIP32\Extend\PrivateKeyInterface;
 use FurqanSiddiqui\Bitcoin\Exception\AddressGenerateException;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey\P2PKH_Address;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey\P2SH_Address;
 
 /**
  * Class PublicKey
@@ -64,5 +65,16 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
         }
 
         return new P2PKH_Address($this, $prefix);
+    }
+
+    /**
+     * @param int|null $p2pkhPrefix
+     * @param int|null $p2shPrefix
+     * @return P2SH_Address
+     * @throws AddressGenerateException
+     */
+    public function p2sh(?int $p2pkhPrefix = null, ?int $p2shPrefix = null): P2SH_Address
+    {
+        return $this->p2pkh($p2pkhPrefix)->p2sh($p2shPrefix);
     }
 }
