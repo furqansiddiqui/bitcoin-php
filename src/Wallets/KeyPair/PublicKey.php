@@ -44,6 +44,14 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     }
 
     /**
+     * @return PrivateKey
+     */
+    public function privateKey(): PrivateKeyInterface
+    {
+        return parent::privateKey();
+    }
+
+    /**
      * @param int|null $prefix
      * @return P2PKH_Address
      * @throws AddressGenerateException
