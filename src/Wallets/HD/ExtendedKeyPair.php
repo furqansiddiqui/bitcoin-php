@@ -41,6 +41,11 @@ class ExtendedKeyPair extends ExtendedKey
     {
         $this->node = $node;
         parent::__construct($seed, $parent);
+
+        // Configure ECDSA Curve
+        if ($this->node->const_ecdsa_curve) {
+            $this->set("curve", $this->node->const_ecdsa_curve);
+        }
     }
 
     /**
