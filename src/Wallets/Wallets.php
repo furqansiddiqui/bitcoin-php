@@ -24,6 +24,8 @@ class Wallets
     private $node;
     /** @var KeyPairFactory */
     private $keyPairFactory;
+    /** @var MnemonicFactory */
+    private $mnemonicFactory;
 
     /**
      * Wallets constructor.
@@ -33,6 +35,7 @@ class Wallets
     {
         $this->node = $node;
         $this->keyPairFactory = new KeyPairFactory($node);
+        $this->mnemonicFactory = new MnemonicFactory($node);
     }
 
     /**
@@ -41,6 +44,22 @@ class Wallets
     public function keyPair(): KeyPairFactory
     {
         return $this->keyPairFactory;
+    }
+
+    /**
+     * @return MnemonicFactory
+     */
+    public function mnemonic(): MnemonicFactory
+    {
+        return $this->mnemonicFactory;
+    }
+
+    /**
+     * @return MnemonicFactory
+     */
+    public function bip39(): MnemonicFactory
+    {
+        return $this->mnemonic();
     }
 
 
