@@ -24,7 +24,7 @@ use FurqanSiddiqui\DataTypes\Binary;
  * Class P2PKH_Address
  * @package FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey
  */
-class P2PKH_Address
+class P2PKH_Address implements PaymentAddressInterface
 {
     /** @var PublicKey */
     private $publicKey;
