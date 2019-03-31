@@ -14,9 +14,12 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
+use FurqanSiddiqui\Base58\Result\Base58Encoded;
 use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
+use FurqanSiddiqui\Bitcoin\Serialize\WIF;
 use FurqanSiddiqui\DataTypes\Binary;
 
 /**
@@ -61,5 +64,30 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
         }
 
         return $this->publicKey;
+    }
+
+    /**
+     * @param int|null $prefix
+     * @return Base58Encoded
+     * @throws KeyPairException
+     */
+    public function wif(?int $prefix = null): Base58Encoded
+    {
+        $prefix = $prefix ?? $this->node()->const_wif_prefix;
+        if (!is_int($prefix)) {
+            throw new KeyPairException('WIF prefix constant not defined');
+        }
+
+        return WIF::Encode($prefix, $this->privateKey->get()->base16(), true);
+    }
+
+    /**
+     * @param int|null $prefix
+     * @return Base58Encoded
+     * @throws KeyPairException
+     */
+    public function export(?int $prefix = null): Base58Encoded
+    {
+        return $this->wif($prefix);
     }
 }
