@@ -23,6 +23,7 @@ use FurqanSiddiqui\Bitcoin\Wallets\Wallets;
  * @property-read null|string $const_name
  * @property-read null|int $const_decimals
  * @property-read null|int $const_private_key_bits
+ * @property-read null|int $const_ecdsa_curve
  * @property-read null|int $const_p2pkh_prefix
  * @property-read null|int $const_p2sh_prefix
  * @property-read null|int $const_wif_prefix
@@ -56,5 +57,13 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
         }
 
         throw new \DomainException('Cannot read inaccessible properly');
+    }
+
+    /**
+     * @return Wallets
+     */
+    public function wallets(): Wallets
+    {
+        return $this->wallets;
     }
 }

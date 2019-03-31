@@ -30,8 +30,6 @@ abstract class BitcoinNetworkConstants
     public const PRIVATE_KEY_BITS = 256;
     /** @var int ECDSA curve (defaults Secp256k1) */
     public const ECDSA_CURVE = Curves::SECP256K1;
-    /** @var int ECDSA fail-safe curve (default Secp256k1_OpenSSL) */
-    public const ECDSA_CURVE_FAILSAFE = Curves::SECP256K1_OPENSSL;
 
     /**
      *  Address Prefixes
