@@ -63,7 +63,7 @@ class MnemonicFactory
 
         if (!is_string($entropy) || !DataTypes::isBase16($entropy)) {
             throw new \InvalidArgumentException(
-                'Mnemonic entropy must be Hexadecimal string on instance of Binary buffer'
+                'Mnemonic entropy must be Hexadecimal string or instance of Binary buffer'
             );
         }
 

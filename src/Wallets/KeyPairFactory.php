@@ -73,7 +73,7 @@ class KeyPairFactory
         if (!$entropy instanceof Binary) {
             if (!is_string($entropy) || !DataTypes::isBase16($entropy)) {
                 throw new \InvalidArgumentException(
-                    'Private key entropy must be Hexadecimal string on instance of Binary buffer'
+                    'Private key entropy must be Hexadecimal string or instance of Binary buffer'
                 );
             }
 
