@@ -42,6 +42,8 @@ class ExtendedKeyPair extends ExtendedKey
         $this->node = $node;
         parent::__construct($seed, $parent);
 
+        $this->internalDerivationCallback = [$this, "derive"]; // So instance of self is returned instead of parent
+
         // Configure ECDSA Curve
         if ($this->node->const_ecdsa_curve) {
             $this->set("curve", $this->node->const_ecdsa_curve);
@@ -49,7 +51,30 @@ class ExtendedKeyPair extends ExtendedKey
     }
 
     /**
-     * @return PrivateKeyInterface
+     * @param $path
+     * @return ExtendedKeyPair
+     * @throws \FurqanSiddiqui\BIP32\Exception\ExtendedKeyException
+     */
+    public function derivePath($path): ExtendedKeyInterface
+    {
+        return parent::derivePath($path);
+    }
+
+    /**
+     * @param int $index
+     * @param bool $isHardened
+     * @return ExtendedKeyPair
+     * @throws \FurqanSiddiqui\BIP32\Exception\ChildKeyDeriveException
+     * @throws \FurqanSiddiqui\BIP32\Exception\ExtendedKeyException
+     */
+    public function derive(int $index, bool $isHardened = false): ExtendedKeyInterface
+    {
+        $extendedKey = parent::derive($index, $isHardened);
+        return new ExtendedKeyPair($this->node, $extendedKey->raw(), $this);
+    }
+
+    /**
+     * @return PrivateKey
      */
     public function privateKey(): PrivateKeyInterface
     {
