@@ -28,7 +28,7 @@ class Bitcoin extends AbstractBitcoinNode
     public const P2SH_PREFIX = 0x05;
     public const WIF_PREFIX = 0x80;
     public const BIP32_SEED_KEY = "Bitcoin seed";
-    public const BIP32_PRIVATE = 0x0488ADE4;
-    public const BIP32_PUBLIC = 0x0488B21E;
+    public const BIP32_PRIVATE_PREFIX = 0x0488ADE4;
+    public const BIP32_PUBLIC_PREFIX = 0x0488B21E;
     public const BIP44_COIN_INDEX = 0;
 }

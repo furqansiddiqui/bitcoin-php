@@ -28,7 +28,7 @@ class BitcoinTestnet extends AbstractBitcoinNode
     public const P2SH_PREFIX = 0xC4;
     public const WIF_PREFIX = 0xEF;
     public const BIP32_SEED_KEY = "Bitcoin seed";
-    public const BIP32_PRIVATE = 0x04358394;
-    public const BIP32_PUBLIC = 0x043587CF;
+    public const BIP32_PRIVATE_PREFIX = 0x04358394;
+    public const BIP32_PUBLIC_PREFIX = 0x043587CF;
     public const BIP44_COIN_INDEX = 1;
 }
