@@ -41,6 +41,11 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
     {
         $this->node = $node;
         parent::__construct($entropy, $extendedKey);
+
+        // Configure ECDSA Curve
+        if ($this->node->const_ecdsa_curve) {
+            $this->set("curve", $this->node->const_ecdsa_curve);
+        }
     }
 
     /**
