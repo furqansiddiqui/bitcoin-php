@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Networks;
 
+use FurqanSiddiqui\BIP32\ECDSA\Curves;
+
 /**
  * Class BitcoinNetworkConstants
  * @package FurqanSiddiqui\Bitcoin\Networks
@@ -26,6 +28,10 @@ abstract class BitcoinNetworkConstants
     public const DECIMALS = null;
     /** @var int|null Bitwise length of Private key entropy, (set NULL for any) */
     public const PRIVATE_KEY_BITS = 256;
+    /** @var int ECDSA curve (defaults Secp256k1) */
+    public const ECDSA_CURVE = Curves::SECP256K1;
+    /** @var int ECDSA curve (default Secp256k1_OpenSSL) */
+    public const ECDSA_CURVE_FALLBACK = Curves::SECP256K1_OPENSSL;
 
     /**
      *  Address Prefixes
