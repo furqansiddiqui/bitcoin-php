@@ -27,6 +27,7 @@ class Bitcoin extends AbstractBitcoinNode
     public const P2PKH_PREFIX = 0x00;
     public const P2SH_PREFIX = 0x05;
     public const WIF_PREFIX = 0x80;
+    public const SIGNED_MESSAGE_PREFIX = "Bitcoin Signed Message:\n";
     public const BIP32_SEED_KEY = "Bitcoin seed";
     public const BIP32_PRIVATE_PREFIX = 0x0488ADE4;
     public const BIP32_PUBLIC_PREFIX = 0x0488B21E;

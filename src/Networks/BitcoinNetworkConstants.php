@@ -48,6 +48,11 @@ abstract class BitcoinNetworkConstants
     public const WIF_PREFIX = null;
 
     /**
+     * Signed Messages
+     */
+    public const SIGNED_MESSAGE_PREFIX = null;
+
+    /**
      * BIP32 Constants
      */
 

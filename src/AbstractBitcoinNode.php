@@ -27,6 +27,7 @@ use FurqanSiddiqui\Bitcoin\Wallets\Wallets;
  * @property-read null|int $const_p2pkh_prefix
  * @property-read null|int $const_p2sh_prefix
  * @property-read null|int $const_wif_prefix
+ * @property-read null|string $const_signed_message_prefix
  * @property-read null|string $const_bip32_seed_key
  * @property-read null|int $const_bip32_private_prefix
  * @property-read null|int $const_bip32_public_prefix
