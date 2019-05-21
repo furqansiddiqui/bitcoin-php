@@ -14,12 +14,10 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
-use FurqanSiddiqui\Base58\Result\Base58Encoded;
 use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
-use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
-use FurqanSiddiqui\Bitcoin\Serialize\WIF;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey\Export;
 use FurqanSiddiqui\DataTypes\Binary;
 
 /**
@@ -43,7 +41,7 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
         parent::__construct($entropy, $extendedKey);
 
         // Configure ECDSA Curve
-        if ($this->node->const_ecdsa_curve) {
+        if (!$extendedKey && $this->node->const_ecdsa_curve) {
             $this->set("curve", $this->node->const_ecdsa_curve);
         }
     }
@@ -72,27 +70,10 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
     }
 
     /**
-     * @param int|null $prefix
-     * @return Base58Encoded
-     * @throws KeyPairException
+     * @return Export
      */
-    public function wif(?int $prefix = null): Base58Encoded
+    public function export(): Export
     {
-        $prefix = $prefix ?? $this->node()->const_wif_prefix;
-        if (!is_int($prefix)) {
-            throw new KeyPairException('WIF prefix constant not defined');
-        }
-
-        return WIF::Encode($prefix, $this->privateKey->get()->base16(), true);
-    }
-
-    /**
-     * @param int|null $prefix
-     * @return Base58Encoded
-     * @throws KeyPairException
-     */
-    public function export(?int $prefix = null): Base58Encoded
-    {
-        return $this->wif($prefix);
+        return new Export($this);
     }
 }
