@@ -16,9 +16,11 @@ namespace FurqanSiddiqui\Bitcoin\Wallets\HD;
 
 use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PrivateKeyInterface;
+use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
 use FurqanSiddiqui\BIP32\ExtendedKey;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 use FurqanSiddiqui\DataTypes\Binary;
 
 /**
@@ -41,8 +43,6 @@ class ExtendedKeyPair extends ExtendedKey
     {
         $this->node = $node;
         parent::__construct($seed, $parent);
-
-        $this->internalDerivationCallback = [$this, "derive"]; // So instance of self is returned instead of parent
 
         // Configure ECDSA Curve
         if ($this->node->const_ecdsa_curve) {
@@ -83,5 +83,13 @@ class ExtendedKeyPair extends ExtendedKey
         }
 
         return $this->privateKeyInstance;
+    }
+
+    /**
+     * @return PublicKey
+     */
+    public function publicKey(): PublicKeyInterface
+    {
+        return parent::publicKey();
     }
 }
