@@ -14,9 +14,11 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets;
 
+use FurqanSiddiqui\Base58\Result\Base58Encoded;
 use FurqanSiddiqui\BIP39\Mnemonic;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
+use FurqanSiddiqui\Bitcoin\Serialize\WIF;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\DataTypes\Base16;
 use FurqanSiddiqui\DataTypes\Binary;
@@ -98,5 +100,31 @@ class KeyPairFactory
 
         $seed = $mnemonic->generateSeed($passphrase, $byteLength);
         return new PrivateKey($this->node, new Base16($seed), null);
+    }
+
+    /**
+     * @param $wif
+     * @param bool $isCompressed
+     * @param int|null $prefix
+     * @return PrivateKey
+     * @throws KeyPairException
+     */
+    public function import($wif, bool $isCompressed = true, ?int $prefix = null): PrivateKey
+    {
+        if (!$wif instanceof Base58Encoded) {
+            if (!is_string($wif) || !$wif) {
+                throw new \InvalidArgumentException('Private key import method requires first argument to be Base58Encoded buffer or a String');
+            }
+
+            $wif = new Base58Encoded($wif);
+        }
+
+        $prefix = $prefix ?? $this->node->const_wif_prefix;
+        if (!is_int($prefix)) {
+            throw new KeyPairException('WIF prefix constant not defined');
+        }
+
+        $privateKey = WIF::Decode($prefix, $wif, $isCompressed);
+        return new PrivateKey($this->node, $privateKey, null);
     }
 }
