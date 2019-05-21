@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Serialize;
 
 use FurqanSiddiqui\Base58\Base58Check;
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
+use FurqanSiddiqui\DataTypes\Base16;
 use FurqanSiddiqui\DataTypes\DataTypes;
 
 /**
@@ -44,5 +45,41 @@ class WIF
 
         $raw = dechex($networkPrefix) . $privateKey;
         return (new Base58Check())->encode($raw);
+    }
+
+    /**
+     * @param int $networkPrefixMatch
+     * @param $wif
+     * @param bool $isCompressed
+     * @return Base16
+     */
+    public static function Decode(int $networkPrefixMatch, $wif, bool $isCompressed = true): Base16
+    {
+        if (!$wif instanceof Base58Encoded) {
+            if (!is_string($wif) || !$wif) {
+                throw new \InvalidArgumentException('First argument must be a Base58Encoded buffer or a string');
+            }
+
+            $wif = new Base58Encoded($wif);
+        }
+
+        // Decode
+        $privateKey = (new Base58Check())->decode($wif);
+        if ($isCompressed) {
+            $privateKey->substr(0, -1); // Remove last 1 byte
+        }
+
+        // Network prefix check
+        if ($networkPrefixMatch) {
+            $networkPrefixHex = dechex($networkPrefixMatch);
+            $networkPrefixByteLen = strlen(hex2bin($networkPrefixHex));
+            if (!hash_equals($privateKey->copy(0, $networkPrefixByteLen)->get()->base16(), $networkPrefixHex)) {
+                throw new \UnexpectedValueException('Network prefix mismatch');
+            }
+
+            $privateKey->substr($networkPrefixByteLen); // Remove first N bytes (network prefix len)
+        }
+
+        return $privateKey;
     }
 }
