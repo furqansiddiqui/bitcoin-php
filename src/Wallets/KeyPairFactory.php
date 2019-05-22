@@ -79,7 +79,7 @@ class KeyPairFactory
                 );
             }
 
-            $entropy = new Base16($entropy);
+            $entropy = (new Base16($entropy))->binary();
         }
 
         return new PrivateKey($this->node, $entropy, null);
@@ -99,7 +99,7 @@ class KeyPairFactory
         }
 
         $seed = $mnemonic->generateSeed($passphrase, $byteLength);
-        return new PrivateKey($this->node, new Base16($seed), null);
+        return new PrivateKey($this->node, (new Base16($seed))->binary(), null);
     }
 
     /**

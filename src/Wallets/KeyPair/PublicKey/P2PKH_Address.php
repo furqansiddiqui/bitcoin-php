@@ -102,7 +102,7 @@ class P2PKH_Address implements PaymentAddressInterface
     {
         if (!$this->hash160) {
             $hash160 = $this->publicKey->compressed()->copy();
-            $hash160->hash()->sha256()
+            $hash160 = $hash160->hash()->sha256()
                 ->hash()->ripeMd160();
 
             $this->hash160 = $hash160;
@@ -118,11 +118,10 @@ class P2PKH_Address implements PaymentAddressInterface
      */
     public function address(): Base58Encoded
     {
-        $prefixHexits = dechex($this->prefix);
-        if (strlen($prefixHexits) % 2 !== 0) {
-            $prefixHexits = "0" . $prefixHexits;
-        }
+        $hash160 = $this->hash160()->clone();
+        $hash160 = $hash160->encode()->base16();
+        $hash160->prepend(dechex($this->prefix));
 
-        return $this->base58check->encode($prefixHexits . $this->hash160()->get()->base16(false));
+        return $this->base58check->encode($hash160->hexits());
     }
 }

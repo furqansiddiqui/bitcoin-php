@@ -15,10 +15,12 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
-use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
+use FurqanSiddiqui\BIP32\ECDSA\Curves;
+use FurqanSiddiqui\Bitcoin\Exception\KeyPairExportException;
 use FurqanSiddiqui\Bitcoin\Serialize\WIF;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\ECDSA\OpenSSL\OpenSSL;
+use FurqanSiddiqui\ECDSA\OpenSSL\PEM_Certificate;
 
 /**
  * Class Export
@@ -41,23 +43,38 @@ class Export
     /**
      * @param int|null $prefix
      * @return Base58Encoded
-     * @throws KeyPairException
+     * @throws KeyPairExportException
      */
     public function wif(?int $prefix = null): Base58Encoded
     {
         $prefix = $prefix ?? $this->privateKey->node()->const_wif_prefix;
         if (!is_int($prefix)) {
-            throw new KeyPairException('WIF prefix constant not defined');
+            throw new KeyPairExportException('WIF prefix constant not defined');
         }
 
-        return WIF::Encode($prefix, $this->privateKey->raw()->get()->base16(), true);
+        return WIF::Encode($prefix, $this->privateKey->raw()->encode()->base16()->hexits(), true);
     }
 
     /**
-     * @return string
+     * @return PEM_Certificate
+     * @throws KeyPairExportException
      */
-    public function pem(): string
+    public function pem(): PEM_Certificate
     {
-        return OpenSSL::der2pem($this->privateKey->raw()->raw(), "EC PRIVATE KEY");
+        $curve = $this->privateKey->node()->const_ecdsa_curve;
+        if (!$curve) {
+            throw new KeyPairExportException('Cannot export key to PEM; ECDSA curve not set');
+        }
+
+        switch ($curve) {
+            case Curves::SECP256K1:
+            case Curves::SECP256K1_OPENSSL:
+                return OpenSSL::Secp256k1_PrivateKeyPEM($this->privateKey->raw());
+                break;
+        }
+
+        throw new KeyPairExportException(
+            sprintf('Cannot export private key with curve "%s" to PEM', Curves::INDEX[$curve] ?? "Unknown")
+        );
     }
 }

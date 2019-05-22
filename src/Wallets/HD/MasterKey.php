@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets\HD;
 
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
-use FurqanSiddiqui\DataTypes\Binary;
+use FurqanSiddiqui\DataTypes\Base16;
 
 /**
  * Class MasterKey
@@ -26,16 +26,21 @@ class MasterKey extends ExtendedKeyPair
     /**
      * MasterKey constructor.
      * @param AbstractBitcoinNode $node
-     * @param Binary $seed
+     * @param Base16 $seed
      * @param string|null $hmacKey
      * @throws \FurqanSiddiqui\BIP32\Exception\ExtendedKeyException
      */
-    public function __construct(AbstractBitcoinNode $node, Binary $seed, ?string $hmacKey = null)
+    public function __construct(AbstractBitcoinNode $node, Base16 $seed, ?string $hmacKey = null)
     {
-        if ($hmacKey) {
-            $seed = $seed->hash()->hmac("sha512", $hmacKey);
+        $binary = $seed->binary();
+        if (!in_array($binary->size()->bits(), [128, 256, 512])) {
+            throw new \LengthException('Base16 seed must be 128, 256 or 512-bit long');
         }
 
-        parent::__construct($node, $seed, null);
+        if ($hmacKey) {
+            $binary = $binary->hash()->hmac("sha512", $hmacKey);
+        }
+
+        parent::__construct($node, $binary, null);
     }
 }

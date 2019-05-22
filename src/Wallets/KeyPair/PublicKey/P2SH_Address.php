@@ -17,7 +17,6 @@ namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 use FurqanSiddiqui\Base58\Base58Check;
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
 use FurqanSiddiqui\Bitcoin\Exception\AddressGenerateException;
-use FurqanSiddiqui\DataTypes\Base16;
 use FurqanSiddiqui\DataTypes\Binary;
 
 /**
@@ -78,14 +77,11 @@ class P2SH_Address implements PaymentAddressInterface
     public function hash160(): Binary
     {
         if (!$this->hash160) {
-            $p2pkhPrefixHex = dechex($this->p2pkh_Address->prefix());
-            if (strlen($p2pkhPrefixHex) % 2 !== 0) {
-                $p2pkhPrefixHex = "0" . $p2pkhPrefixHex;
-            }
+            $hash160_raw = $this->p2pkh_Address->hash160()->clone();
+            $hash160_raw = $hash160_raw->encode()->base16();
+            $hash160_raw->prepend(dechex($this->p2pkh_Address->prefix()) . "14");
 
-            $hash160_raw = $p2pkhPrefixHex . "14" . $this->p2pkh_Address->hash160()->get()->base16(false);
-            $hash160 = new Base16($hash160_raw);
-            $hash160->hash()->sha256()
+            $hash160 = $hash160_raw->binary()->hash()->sha256()
                 ->hash()->ripeMd160();
 
             $this->hash160 = $hash160;
@@ -101,11 +97,10 @@ class P2SH_Address implements PaymentAddressInterface
      */
     public function address(): Base58Encoded
     {
-        $prefixHexits = dechex($this->prefix);
-        if (strlen($prefixHexits) % 2 !== 0) {
-            $prefixHexits = "0" . $prefixHexits;
-        }
+        $hash160 = $this->hash160()->clone();
+        $hash160 = $hash160->encode()->base16();
+        $hash160->prepend(dechex($this->prefix));
 
-        return $this->base58check->encode($prefixHexits . $this->hash160()->get()->base16(false));
+        return $this->base58check->encode($hash160->hexits());
     }
 }

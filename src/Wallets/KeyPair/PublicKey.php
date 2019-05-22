@@ -32,6 +32,7 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
      * PublicKey constructor.
      * @param PrivateKeyInterface $keyPair
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\ECDSA_Exception
      * @throws \FurqanSiddiqui\ECDSA\Exception\GenerateVectorException
      * @throws \FurqanSiddiqui\ECDSA\Exception\MathException
      */
