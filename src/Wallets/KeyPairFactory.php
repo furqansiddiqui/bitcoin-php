@@ -20,6 +20,7 @@ use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
 use FurqanSiddiqui\Bitcoin\Serialize\WIF;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 use FurqanSiddiqui\DataTypes\Base16;
 use FurqanSiddiqui\DataTypes\Binary;
 use FurqanSiddiqui\DataTypes\DataTypes;
@@ -100,6 +101,34 @@ class KeyPairFactory
 
         $seed = $mnemonic->generateSeed($passphrase, $byteLength);
         return new PrivateKey($this->node, (new Base16($seed))->binary(), null);
+    }
+
+    /**
+     * @param Binary|null $fullPublicKey
+     * @param Binary|null $compressedPublicKey
+     * @return PublicKey
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\ECDSA_Exception
+     * @throws \FurqanSiddiqui\ECDSA\Exception\GenerateVectorException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\MathException
+     */
+    public function publicKeyFromRaw(?Binary $fullPublicKey = null, ?Binary $compressedPublicKey = null): PublicKey
+    {
+        return new PublicKey($this->node, null, $fullPublicKey, $compressedPublicKey);
+    }
+
+    /**
+     * @param $x
+     * @param $y
+     * @return PublicKey
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\ECDSA_Exception
+     * @throws \FurqanSiddiqui\ECDSA\Exception\GenerateVectorException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\MathException
+     */
+    public function publicKeyFromCoords($x, $y): PublicKey
+    {
+        return PublicKey::fromXAndY($x, $y);
     }
 
     /**
