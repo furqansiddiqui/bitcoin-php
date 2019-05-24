@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
+use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
@@ -64,10 +65,37 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
     public function publicKey(): PublicKeyInterface
     {
         if (!$this->publicKey instanceof PublicKey) {
-            $this->publicKey = new PublicKey($this);
+            $this->publicKey = new PublicKey($this->node, $this);
         }
 
         return $this->publicKey;
+    }
+
+    /**
+     * @param string $message
+     * @return string
+     * @throws \Exception
+     */
+    public function signMessage(string $message): string
+    {
+        $signedMessagePrefix = $this->node()->const_signed_message_prefix;
+        $signedMessagePrefixLen = strlen($signedMessagePrefix);
+        $messageLen = strlen($message);
+
+        $buffer = new Binary();
+        $buffer->append(chr($signedMessagePrefixLen));
+        $buffer->append($signedMessagePrefix);
+        $buffer->append(chr($messageLen));
+        $buffer->append($message);
+
+        $hash = $buffer->hash()->digest("sha256", 2);
+        $randomK    =   new Binary(random_bytes(32));
+
+        $ellipticCurve = Curves::getInstanceOf($this->getEllipticCurveId());
+        $signature = $ellipticCurve->sign($this->raw(), $hash, $randomK);
+
+        var_dump($signature->getCompact()->raw());
+        return $signature->getCompact()->encode()->base64()->encoded();
     }
 
     /**
