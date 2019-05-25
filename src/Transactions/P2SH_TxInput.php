@@ -12,24 +12,18 @@
 
 declare(strict_types=1);
 
-namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
+namespace FurqanSiddiqui\Bitcoin\Transactions;
 
-use FurqanSiddiqui\Base58\Result\Base58Encoded;
+use FurqanSiddiqui\BIP32\KeyPair\PrivateKey;
 use FurqanSiddiqui\DataTypes\Binary;
+use FurqanSiddiqui\ECDSA\Signature;
 
 /**
- * Interface PaymentAddressInterface
- * @package FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey
+ * Class P2SH_TxInput
+ * @package FurqanSiddiqui\Bitcoin\Transactions
  */
-interface PaymentAddressInterface
+class P2SH_TxInput extends AbstractTxInput
 {
-    /**
-     * @return Binary
-     */
-    public function hash160(): Binary;
 
-    /**
-     * @return Base58Encoded
-     */
-    public function address(): Base58Encoded;
+
 }
