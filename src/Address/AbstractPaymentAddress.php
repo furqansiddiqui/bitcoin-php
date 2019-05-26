@@ -26,13 +26,13 @@ use FurqanSiddiqui\DataTypes\Base16;
 abstract class AbstractPaymentAddress implements PaymentAddressInterface
 {
     /** @var AbstractBitcoinNode|null */
-    private $node;
+    protected $node;
     /** @var string */
-    private $address;
+    protected $address;
     /** @var Base16 */
-    private $prefix;
+    protected $prefix;
     /** @var Base16 */
-    private $hash160;
+    protected $hash160;
 
     /**
      * AbstractPaymentAddress constructor.
@@ -52,16 +52,13 @@ abstract class AbstractPaymentAddress implements PaymentAddressInterface
         $this->hash160 = $decoded->clone()->substr(-20)->encode()->base16(); // Get last 20 bytes
         $this->prefix = $decoded->clone()->substr(0, -20)->encode()->base16(); // Get initial bytes, leading last 20
 
+        // Set buffers as readOnly
+        $this->hash160->readOnly(true);
+        $this->prefix->readOnly(true);
+
         // Hash160
         if ($this->hash160->binary()->size()->bits() !== 160) {
             throw new PaymentAddressException('Payment address hash160 must be 160 bit long');
-        }
-
-        // Prefix verify
-        if ($node) {
-            if ($this->prefix->hexits(false) === dechex($node->const_p2pkh_prefix)) {
-                throw new PaymentAddressException('Payment address prefix does not match');
-            }
         }
 
         // Cross-check hash160
@@ -70,6 +67,14 @@ abstract class AbstractPaymentAddress implements PaymentAddressInterface
                 throw new PaymentAddressException('Payment address hash160 cross-check fail');
             }
         }
+    }
+
+    /**
+     * @return Base16|null
+     */
+    public function prefix(): ?Base16
+    {
+        return $this->prefix;
     }
 
     /**

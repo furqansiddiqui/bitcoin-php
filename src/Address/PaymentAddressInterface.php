@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Address;
 
+use FurqanSiddiqui\DataTypes\Base16;
+
 /**
  * Interface PaymentAddressInterface
  * @package FurqanSiddiqui\Bitcoin\Address
@@ -29,4 +31,9 @@ interface PaymentAddressInterface
      * @return string
      */
     public function getAddress(): string;
+
+    /**
+     * @return Base16|null
+     */
+    public function prefix(): ?Base16;
 }

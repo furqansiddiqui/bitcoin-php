@@ -19,13 +19,13 @@ use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\DataTypes\Base16;
 
 /**
- * Class P2PKH_Address
+ * Class P2SH_Address
  * @package FurqanSiddiqui\Bitcoin\Address
  */
-class P2PKH_Address extends AbstractPaymentAddress
+class P2SH_Address extends AbstractPaymentAddress
 {
     /**
-     * P2PKH_Address constructor.
+     * P2SH_Address constructor.
      * @param AbstractBitcoinNode|null $node
      * @param string $addr
      * @param Base16|null $crossCheckHash160
@@ -37,7 +37,7 @@ class P2PKH_Address extends AbstractPaymentAddress
 
         // Prefix verify
         if ($node) {
-            if ($this->prefix->hexits(false) === dechex($node->const_p2pkh_prefix)) {
+            if ($this->prefix->hexits(false) === dechex($node->const_p2sh_prefix)) {
                 throw new PaymentAddressException('Payment address P2PKH prefix does not match');
             }
         }

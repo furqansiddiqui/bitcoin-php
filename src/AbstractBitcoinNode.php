@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin;
 
+use FurqanSiddiqui\Bitcoin\Address\AddressFactory;
 use FurqanSiddiqui\Bitcoin\Networks\BitcoinNetworkConstants;
 use FurqanSiddiqui\Bitcoin\Wallets\Wallets;
 
@@ -37,6 +38,8 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
 {
     /** @var Wallets */
     protected $wallets;
+    /** @var AddressFactory */
+    protected $addrFactory;
 
     /**
      * AbstractBitcoinNode constructor.
@@ -44,6 +47,7 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
     public function __construct()
     {
         $this->wallets = new Wallets($this);
+        $this->addrFactory = new AddressFactory($this);
     }
 
     /**
@@ -66,5 +70,13 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
     public function wallets(): Wallets
     {
         return $this->wallets;
+    }
+
+    /**
+     * @return AddressFactory
+     */
+    public function address(): AddressFactory
+    {
+        return $this->addrFactory;
     }
 }

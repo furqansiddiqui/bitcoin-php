@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Address;
 
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
+use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
 
 /**
  * Class AddressFactory
@@ -42,5 +44,37 @@ class AddressFactory
     public function p2pkh(string $address): P2PKH_Address
     {
         return new P2PKH_Address($this->node, $address);
+    }
+
+    /**
+     * @param string $address
+     * @return PaymentAddressInterface
+     * @throws PaymentAddressException
+     */
+    public function address(string $address): PaymentAddressInterface
+    {
+        $base58Check = Base58Check::getInstance();
+        $decodedAddress = $base58Check->decode($address);
+        $decodedAddressHexits = $decodedAddress->hexits();
+
+        // P2PKH
+        $p2pkhPrefix = $this->node->const_p2pkh_prefix;
+        if ($p2pkhPrefix) {
+            $p2pkhPrefixHex = dechex($p2pkhPrefix);
+            if (substr($decodedAddressHexits, 0, strlen($p2pkhPrefixHex)) === $p2pkhPrefixHex) {
+                return new P2PKH_Address($this->node, $address);
+            }
+        }
+
+        // P2SH
+        $p2shPrefix = $this->node->const_p2sh_prefix;
+        if ($p2shPrefix) {
+            $p2shPrefixHex = dechex($p2shPrefix);
+            if (substr($decodedAddressHexits, 0, strlen($p2shPrefixHex)) === $p2shPrefixHex) {
+                return new P2SH_Address($this->node, $address);
+            }
+        }
+
+        throw new PaymentAddressException('Could not identify given address as P2PKH/P2SH');
     }
 }
