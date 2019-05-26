@@ -48,6 +48,16 @@ class AddressFactory
 
     /**
      * @param string $address
+     * @return P2SH_Address
+     * @throws PaymentAddressException
+     */
+    public function p2sh(string $address): P2SH_Address
+    {
+        return new P2SH_Address($this->node, $address);
+    }
+
+    /**
+     * @param string $address
      * @return PaymentAddressInterface
      * @throws PaymentAddressException
      */
