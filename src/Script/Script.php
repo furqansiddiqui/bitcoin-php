@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
+use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
 use FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException;
 use FurqanSiddiqui\Bitcoin\Exception\ScriptParseException;
@@ -26,6 +27,8 @@ use FurqanSiddiqui\DataTypes\DataTypes;
  */
 class Script
 {
+    /** @var AbstractBitcoinNode */
+    private $node;
     /** @var string */
     private $raw;
     /** @var Base16 */
@@ -110,22 +113,24 @@ class Script
     }
 
     /**
+     * @param AbstractBitcoinNode $node
      * @param string $serializedBase16Script
      * @return Script
      * @throws ScriptDecodeException
      * @throws ScriptParseException
      */
-    public static function Decode(string $serializedBase16Script): self
+    public static function Decode(AbstractBitcoinNode $node, string $serializedBase16Script): self
     {
-        return new self(self::DecodeAsString($serializedBase16Script));
+        return new self($node, self::DecodeAsString($serializedBase16Script));
     }
 
     /**
      * Script constructor.
+     * @param AbstractBitcoinNode $node
      * @param string $script
      * @throws ScriptParseException
      */
-    public function __construct(string $script)
+    public function __construct(AbstractBitcoinNode $node, string $script)
     {
         if (!$script) {
             throw new ScriptParseException('OpCode script cannot be empty');
@@ -133,6 +138,7 @@ class Script
             throw new ScriptParseException('OpCode script contains illegal characters');
         }
 
+        $this->node = $node;
         $this->raw = str_replace("OP_", "", strtoupper($script)); // Replace any "OP_" prefix
         $this->buffer = new Base16();
 
@@ -228,13 +234,21 @@ class Script
         return $this->hash160;
     }
 
+    /**
+     * @return P2SH_Address
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
     public function p2sh(): P2SH_Address
     {
-
+        return $this->node->p2sh()->fromScript($this);
     }
 
+    /**
+     * @return P2SH_Address
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
     public function getP2SHAddress(): P2SH_Address
     {
-
+        return $this->p2sh();
     }
 }
