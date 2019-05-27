@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Address;
 
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
+use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\DataTypes\Base16;
 
 /**
@@ -24,22 +25,37 @@ use FurqanSiddiqui\DataTypes\Base16;
  */
 class P2SH_Address extends AbstractPaymentAddress
 {
+    /** @var Script|null */
+    private $redeemScript;
+
     /**
      * P2SH_Address constructor.
      * @param AbstractBitcoinNode|null $node
      * @param string $addr
      * @param Base16|null $crossCheckHash160
+     * @param Script|null $redeemScript
      * @throws PaymentAddressException
      */
-    public function __construct(?AbstractBitcoinNode $node, string $addr, ?Base16 $crossCheckHash160 = null)
+    public function __construct(?AbstractBitcoinNode $node, string $addr, ?Base16 $crossCheckHash160 = null, ?Script $redeemScript = null)
     {
         parent::__construct($node, $addr, $crossCheckHash160);
 
         // Prefix verify
         if ($node) {
             if ($this->prefix->hexits(false) === dechex($node->const_p2sh_prefix)) {
-                throw new PaymentAddressException('Payment address P2PKH prefix does not match');
+                throw new PaymentAddressException('Payment address P2SH prefix does not match');
             }
         }
+
+        // Redeem Script
+        $this->redeemScript = $redeemScript;
+    }
+
+    /**
+     * @return Script|null
+     */
+    public function redeemScript(): ?Script
+    {
+        return $this->redeemScript;
     }
 }
