@@ -39,7 +39,7 @@ class ScriptFactory
      */
     public function new(): OpCode
     {
-        return new OpCode();
+        return new OpCode($this->node);
     }
 
     /**
@@ -76,7 +76,7 @@ class ScriptFactory
      */
     public function fromSerialized(string $serializedBase16Script): Script
     {
-        return Script::Decode($serializedBase16Script);
+        return Script::Decode($this->node, $serializedBase16Script);
     }
 
     /**
@@ -86,6 +86,6 @@ class ScriptFactory
      */
     public function fromRaw(string $script): Script
     {
-        return new Script($script);
+        return new Script($this->node, $script);
     }
 }
