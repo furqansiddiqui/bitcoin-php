@@ -120,6 +120,7 @@ class OpCode
 
     /**
      * @return Script
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
     public function script(): Script
     {
@@ -128,6 +129,7 @@ class OpCode
 
     /**
      * @return Script
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
     public function getScript(): Script
     {
