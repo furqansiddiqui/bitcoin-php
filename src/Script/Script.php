@@ -97,7 +97,6 @@ class Script
             }
 
             // OpCode
-
             $opCode = $opCodes[$dec] ?? null;
             if ($opCode) {
                 $script[] = $opCode;
