@@ -51,6 +51,24 @@ class P2SH_Factory
     }
 
     /**
+     * @param Script $script
+     * @return P2SH_Address
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
+    public function fromScript(Script $script): P2SH_Address
+    {
+        $base58Check = Base58Check::getInstance();
+        $prefix = $this->usePrefix ?? $this->node->const_p2sh_prefix;
+
+        $rawP2SH = $script->hash160()->clone();
+        if ($prefix && $prefix > 0) {
+            $rawP2SH->prepend(dechex($prefix));
+        }
+
+        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->get(), $script->hash160(), $script);
+    }
+
+    /**
      * @param string $hash160
      * @return P2SH_Address
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
