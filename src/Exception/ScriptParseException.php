@@ -15,9 +15,9 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Exception;
 
 /**
- * Class AddressGenerateException
+ * Class ScriptParseException
  * @package FurqanSiddiqui\Bitcoin\Exception
  */
-class AddressGenerateException extends KeyPairException
+class ScriptParseException extends ScriptException
 {
 }
