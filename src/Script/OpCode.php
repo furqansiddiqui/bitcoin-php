@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
+use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\DataTypes\Binary;
 
 /**
@@ -78,14 +79,18 @@ class OpCode
         "OP_CHECKMULTISIGVERIFY" => 0xaf
     ];
 
+    /** @var AbstractBitcoinNode */
+    private $node;
     /** @var array */
     private $script;
 
     /**
      * OpCode constructor.
+     * @param AbstractBitcoinNode $node
      */
-    public function __construct()
+    public function __construct(AbstractBitcoinNode $node)
     {
+        $this->node = $node;
         $this->script = [];
     }
 
@@ -139,7 +144,7 @@ class OpCode
      */
     public function script(): Script
     {
-        return new Script(implode(" ", $this->script));
+        return new Script($this->node, implode(" ", $this->script));
     }
 
     /**
