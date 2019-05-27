@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin;
 
 use FurqanSiddiqui\Bitcoin\Address\AddressFactory;
 use FurqanSiddiqui\Bitcoin\Networks\BitcoinNetworkConstants;
+use FurqanSiddiqui\Bitcoin\Script\ScriptFactory;
 use FurqanSiddiqui\Bitcoin\Wallets\Wallets;
 
 /**
@@ -40,6 +41,8 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
     protected $wallets;
     /** @var AddressFactory */
     protected $addrFactory;
+    /** @var ScriptFactory */
+    protected $scripts;
 
     /**
      * AbstractBitcoinNode constructor.
@@ -78,5 +81,25 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
     public function address(): AddressFactory
     {
         return $this->addrFactory;
+    }
+
+    /**
+     * @return ScriptFactory
+     */
+    public function script(): ScriptFactory
+    {
+        if (!$this->scripts) {
+            $this->scripts = new ScriptFactory($this);
+        }
+
+        return $this->scripts;
+    }
+
+    /**
+     * @return ScriptFactory
+     */
+    public function opCode(): ScriptFactory
+    {
+        return $this->script();
     }
 }

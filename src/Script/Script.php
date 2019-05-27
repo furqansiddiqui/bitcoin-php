@@ -37,12 +37,11 @@ class Script
      * @param string $serializedBase16Script
      * @return string
      * @throws ScriptDecodeException
-     * @throws ScriptParseException
      */
     public static function DecodeAsString(string $serializedBase16Script): string
     {
         if (!DataTypes::isBase16($serializedBase16Script)) {
-            throw new ScriptParseException('OpCode script decode expects argument to be a valid Base16 string');
+            throw new ScriptDecodeException('OpCode script decode expects argument to be a valid Base16 string');
         }
 
         $opCodes = array_flip(OpCode::OP_CODES);
