@@ -27,7 +27,7 @@ class ScriptFactory
 
     /**
      * ScriptFactory constructor.
-     * @param AbstractBitcoinNode $node \
+     * @param AbstractBitcoinNode $node
      */
     public function __construct(AbstractBitcoinNode $node)
     {
