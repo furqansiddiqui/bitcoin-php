@@ -12,18 +12,12 @@
 
 declare(strict_types=1);
 
-namespace FurqanSiddiqui\Bitcoin\Transactions;
-
-use FurqanSiddiqui\BIP32\KeyPair\PrivateKey;
-use FurqanSiddiqui\DataTypes\Binary;
-use FurqanSiddiqui\ECDSA\Signature;
+namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 
 /**
- * Class P2SH_TxInput
- * @package FurqanSiddiqui\Bitcoin\Transactions
+ * Interface TxInOutInterface
+ * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
  */
-class P2SH_TxInput extends AbstractTxInput
+interface TxInOutInterface
 {
-
-
 }
