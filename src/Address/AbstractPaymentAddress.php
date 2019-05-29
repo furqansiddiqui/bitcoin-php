@@ -76,6 +76,14 @@ abstract class AbstractPaymentAddress implements PaymentAddressInterface
     abstract public function scriptPubKey(): ?Script;
 
     /**
+     * @return Base16
+     */
+    public function hash160(): Base16
+    {
+        return $this->hash160;
+    }
+
+    /**
      * @return Base16|null
      */
     public function prefix(): ?Base16
