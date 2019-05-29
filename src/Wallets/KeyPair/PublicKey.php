@@ -97,7 +97,7 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
         $prefix = $prefix ?? $this->node->const_p2pkh_prefix;
 
         $rawP2PKH = $this->hash160()->clone();
-        if ($prefix && $prefix > 0) {
+        if (is_int($prefix) && $prefix >= 0) {
             $rawP2PKH->prepend(dechex($prefix));
         }
 
