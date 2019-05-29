@@ -16,11 +16,11 @@
     "php-64bit": "^7.2",
     "ext-openssl": "*",
     "ext-bcmath": "*",
-    "furqansiddiqui/data-types-php": "^0.1.0",
-    "furqansiddiqui/bcmath-php": "^0.1.0",
-    "furqansiddiqui/base58check-php": "dev-master",
+    "furqansiddiqui/data-types-php": "^0.2.20",
+    "furqansiddiqui/bcmath-php": "^0.2.11",
+    "furqansiddiqui/base58check-php": "^0.1.2",
     "furqansiddiqui/bip39-mnemonic-php": "^0.1.0",
-    "furqansiddiqui/bip32-keypair-php": "dev-master"
+    "furqansiddiqui/bip32-keypair-php": "dev-master#7423dc5"
   },
   "autoload": {
     "psr-4": {

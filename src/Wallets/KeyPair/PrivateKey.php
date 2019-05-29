@@ -56,7 +56,7 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
     }
 
     /**
-     * @return PublicKeyInterface
+     * @return PublicKey
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
      * @throws \FurqanSiddiqui\ECDSA\Exception\ECDSA_Exception
      * @throws \FurqanSiddiqui\ECDSA\Exception\GenerateVectorException

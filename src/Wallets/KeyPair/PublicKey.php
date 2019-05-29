@@ -79,7 +79,7 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
             $hash160 = $hash160->hash()->sha256()
                 ->hash()->ripeMd160();
 
-            $this->hash160 = $hash160;
+            $this->hash160 = $hash160->encode()->base16();
             $this->hash160->readOnly(true);
         }
 
