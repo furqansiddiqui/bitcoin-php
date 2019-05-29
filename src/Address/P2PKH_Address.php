@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Address;
 
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
+use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\DataTypes\Base16;
 
 /**
@@ -41,5 +42,21 @@ class P2PKH_Address extends AbstractPaymentAddress
                 throw new PaymentAddressException('Payment address P2PKH prefix does not match');
             }
         }
+    }
+
+    /**
+     * @return Script|null
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function scriptPubKey(): ?Script
+    {
+        $opCode = $this->node->opCode()->new();
+        $opCode->OP_DUP()
+            ->OP_HASH160()
+            ->PUSHDATA($this->hash160->binary())
+            ->OP_EQUALVERIFY()
+            ->OP_CHECKSIG();
+
+        return $opCode->script();
     }
 }

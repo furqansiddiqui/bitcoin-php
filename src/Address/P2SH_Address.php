@@ -58,4 +58,18 @@ class P2SH_Address extends AbstractPaymentAddress
     {
         return $this->redeemScript;
     }
+
+    /**
+     * @return Script|null
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function scriptPubKey(): ?Script
+    {
+        $opCode = $this->node->opCode()->new();
+        $opCode->OP_HASH160()
+            ->PUSHDATA($this->hash160->binary())
+            ->OP_EQUAL();
+
+        return $opCode->script();
+    }
 }

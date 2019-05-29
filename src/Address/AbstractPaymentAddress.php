@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Address;
 
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
+use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
 use FurqanSiddiqui\DataTypes\Base16;
 
@@ -68,6 +69,11 @@ abstract class AbstractPaymentAddress implements PaymentAddressInterface
             }
         }
     }
+
+    /**
+     * @return Script|null
+     */
+    abstract public function scriptPubKey(): ?Script;
 
     /**
      * @return Base16|null
