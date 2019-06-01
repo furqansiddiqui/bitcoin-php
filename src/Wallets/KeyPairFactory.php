@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets;
 
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
+use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\BIP39\Mnemonic;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
@@ -63,7 +64,7 @@ class KeyPairFactory
             throw new KeyPairException('Failed to generate cryptographically secure pseudo-random bytes');
         }
 
-        $entropy = new Binary($randomBytes);
+        $entropy = (new Binary($randomBytes))->encode()->base16();
         return new PrivateKey($this->node, $entropy, null);
     }
 
@@ -73,14 +74,14 @@ class KeyPairFactory
      */
     public function privateKeyFromEntropy($entropy): PrivateKey
     {
-        if (!$entropy instanceof Binary) {
+        if (!$entropy instanceof Base16) {
             if (!is_string($entropy) || !DataTypes::isBase16($entropy)) {
                 throw new \InvalidArgumentException(
                     'Private key entropy must be Hexadecimal string or instance of Binary buffer'
                 );
             }
 
-            $entropy = (new Base16($entropy))->binary();
+            $entropy = new Base16($entropy);
         }
 
         return new PrivateKey($this->node, $entropy, null);
@@ -100,35 +101,33 @@ class KeyPairFactory
         }
 
         $seed = $mnemonic->generateSeed($passphrase, $byteLength);
-        return new PrivateKey($this->node, (new Base16($seed))->binary(), null);
+        if (!$seed instanceof Base16) {
+            $seed = new Base16($seed);
+        }
+
+        return new PrivateKey($this->node, $seed, null);
     }
 
     /**
-     * @param Binary|null $fullPublicKey
-     * @param Binary|null $compressedPublicKey
+     * @param Base16 $publicKey
      * @return PublicKey
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
-     * @throws \FurqanSiddiqui\ECDSA\Exception\ECDSA_Exception
-     * @throws \FurqanSiddiqui\ECDSA\Exception\GenerateVectorException
-     * @throws \FurqanSiddiqui\ECDSA\Exception\MathException
      */
-    public function publicKeyFromRaw(?Binary $fullPublicKey = null, ?Binary $compressedPublicKey = null): PublicKey
+    public function publicKeyFromUncompressed(Base16 $publicKey): PublicKey
     {
-        return new PublicKey($this->node, null, $fullPublicKey, $compressedPublicKey);
+        $curve = Curves::getInstanceOf($this->node->const_ecdsa_curve);
+        return new PublicKey($this->node, null, $curve, $publicKey, false);
     }
 
     /**
-     * @param $x
-     * @param $y
+     * @param Base16 $publicKey
      * @return PublicKey
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
-     * @throws \FurqanSiddiqui\ECDSA\Exception\ECDSA_Exception
-     * @throws \FurqanSiddiqui\ECDSA\Exception\GenerateVectorException
-     * @throws \FurqanSiddiqui\ECDSA\Exception\MathException
      */
-    public function publicKeyFromCoords($x, $y): PublicKey
+    public function publicKeyFromCompressed(Base16 $publicKey): PublicKey
     {
-        return PublicKey::fromXAndY($x, $y);
+        $curve = Curves::getInstanceOf($this->node->const_ecdsa_curve);
+        return new PublicKey($this->node, null, $curve, $publicKey, true);
     }
 
     /**

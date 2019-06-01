@@ -18,6 +18,8 @@ use FurqanSiddiqui\Bitcoin\Address\AddressFactory;
 use FurqanSiddiqui\Bitcoin\Networks\BitcoinNetworkConstants;
 use FurqanSiddiqui\Bitcoin\Script\P2SH_Factory;
 use FurqanSiddiqui\Bitcoin\Script\ScriptFactory;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPairFactory;
+use FurqanSiddiqui\Bitcoin\Wallets\MasterKeyFactory;
 use FurqanSiddiqui\Bitcoin\Wallets\Wallets;
 
 /**
@@ -76,6 +78,22 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
     public function wallets(): Wallets
     {
         return $this->wallets;
+    }
+
+    /**
+     * @return MasterKeyFactory
+     */
+    public function hd(): MasterKeyFactory
+    {
+        return $this->wallets->masterKeyHD();
+    }
+
+    /**
+     * @return KeyPairFactory
+     */
+    public function keyPair(): KeyPairFactory
+    {
+        return $this->wallets->keyPair();
     }
 
     /**

@@ -19,6 +19,7 @@ use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey\Export;
+use FurqanSiddiqui\DataTypes\Base16;
 use FurqanSiddiqui\DataTypes\Binary;
 
 /**
@@ -33,10 +34,10 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
     /**
      * PrivateKey constructor.
      * @param AbstractBitcoinNode $node
-     * @param Binary $entropy
+     * @param Base16 $entropy
      * @param ExtendedKeyInterface|null $extendedKey
      */
-    public function __construct(AbstractBitcoinNode $node, Binary $entropy, ?ExtendedKeyInterface $extendedKey = null)
+    public function __construct(AbstractBitcoinNode $node, Base16 $entropy, ?ExtendedKeyInterface $extendedKey = null)
     {
         $this->node = $node;
         parent::__construct($entropy, $extendedKey);
@@ -58,9 +59,6 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
     /**
      * @return PublicKey
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
-     * @throws \FurqanSiddiqui\ECDSA\Exception\ECDSA_Exception
-     * @throws \FurqanSiddiqui\ECDSA\Exception\GenerateVectorException
-     * @throws \FurqanSiddiqui\ECDSA\Exception\MathException
      */
     public function publicKey(): PublicKeyInterface
     {
@@ -89,13 +87,17 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
         $buffer->append($message);
 
         $hash = $buffer->hash()->digest("sha256", 2);
-        $randomK    =   new Binary(random_bytes(32));
+        $hash = $hash->get()->base16();
 
-        $ellipticCurve = Curves::getInstanceOf($this->getEllipticCurveId());
-        $signature = $ellipticCurve->sign($this->raw(), $hash, $randomK);
+        $ecCurve = Curves::getInstanceOf($this->getEllipticCurveId());
+        $signature = $ecCurve->sign($this->base16(), $hash);
 
-        var_dump($signature->getCompact()->raw());
-        return $signature->getCompact()->encode()->base64()->encoded();
+        $flag = $ecCurve->findRecoveryId($this->publicKey()->getEllipticCurvePubKeyObj(), $signature, $hash, true);
+        var_dump($flag);
+
+        $serialized = sprintf("%s%s%s", chr($flag), $signature->r()->binary(), $signature->s()->binary());
+        var_dump($serialized);
+        var_dump(base64_encode($serialized));
     }
 
     /**

@@ -14,41 +14,44 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
-use FurqanSiddiqui\Base58\Result\Base58Encoded;
-use FurqanSiddiqui\Bitcoin\Exception\KeyPairExportException;
-use FurqanSiddiqui\Bitcoin\Serialize\WIF;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
+use FurqanSiddiqui\DataTypes\Base16;
+use FurqanSiddiqui\ECDSA\Signature;
 
 /**
- * Class Export
+ * Class Signer
  * @package FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey
  */
-class Export
+class Signer
 {
     /** @var PrivateKey */
     private $privateKey;
+    /** @var null|Base16 */
+    private $randomK;
 
     /**
-     * Export constructor.
+     * Signer constructor.
      * @param PrivateKey $privateKey
      */
     public function __construct(PrivateKey $privateKey)
     {
         $this->privateKey = $privateKey;
+
     }
 
-    /**
-     * @param int|null $prefix
-     * @return Base58Encoded
-     * @throws KeyPairExportException
-     */
-    public function wif(?int $prefix = null): Base58Encoded
+    public function useUniqueK(Base16 $k): self
     {
-        $prefix = $prefix ?? $this->privateKey->node()->const_wif_prefix;
-        if (!is_int($prefix)) {
-            throw new KeyPairExportException('WIF prefix constant not defined');
-        }
+        $this->randomK = $k;
+        return $this;
+    }
 
-        return WIF::Encode($prefix, $this->privateKey->base16()->hexits(), true);
+    public function message(string $message): Signature
+    {
+
+    }
+
+    public function sign(Base16 $hash32Byte): Signature
+    {
+
     }
 }

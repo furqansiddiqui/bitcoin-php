@@ -19,7 +19,7 @@ use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2PKH_Address;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
 use FurqanSiddiqui\DataTypes\Base16;
-use FurqanSiddiqui\DataTypes\Binary;
+use FurqanSiddiqui\ECDSA\ECC\EllipticCurveInterface;
 
 /**
  * Class PublicKey
@@ -37,18 +37,16 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     /**
      * PublicKey constructor.
      * @param AbstractBitcoinNode $node
-     * @param PrivateKey|null $keyPair
-     * @param Binary|null $publicKey
-     * @param Binary|null $compressed
+     * @param PrivateKeyInterface|null $privateKey
+     * @param EllipticCurveInterface|null $curve
+     * @param Base16|null $publicKey
+     * @param bool|null $pubKeyArgIsCompressed
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
-     * @throws \FurqanSiddiqui\ECDSA\Exception\ECDSA_Exception
-     * @throws \FurqanSiddiqui\ECDSA\Exception\GenerateVectorException
-     * @throws \FurqanSiddiqui\ECDSA\Exception\MathException
      */
-    public function __construct(AbstractBitcoinNode $node, ?PrivateKey $keyPair, ?Binary $publicKey = null, ?Binary $compressed = null)
+    public function __construct(AbstractBitcoinNode $node, ?PrivateKeyInterface $privateKey, ?EllipticCurveInterface $curve = null, ?Base16 $publicKey = null, ?bool $pubKeyArgIsCompressed = null)
     {
         $this->node = $node;
-        parent::__construct($keyPair, $publicKey, $compressed);
+        parent::__construct($privateKey, $curve, $publicKey, $pubKeyArgIsCompressed);
     }
 
     /**
@@ -75,8 +73,8 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     public function hash160(): Base16
     {
         if (!$this->hash160) {
-            $hash160 = $this->compressedPublicKey->clone();
-            $hash160 = $hash160->hash()->sha256()
+            $hash160 = $this->compressed()->clone();
+            $hash160 = $hash160->binary()->hash()->sha256()
                 ->hash()->ripeMd160();
 
             $this->hash160 = $hash160->encode()->base16();

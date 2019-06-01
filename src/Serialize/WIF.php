@@ -16,7 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Serialize;
 
 use FurqanSiddiqui\Base58\Base58Check;
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
-use FurqanSiddiqui\DataTypes\Binary;
+use FurqanSiddiqui\DataTypes\Base16;
 use FurqanSiddiqui\DataTypes\DataTypes;
 
 /**
@@ -51,9 +51,9 @@ class WIF
      * @param int $networkPrefixMatch
      * @param $wif
      * @param bool $isCompressed
-     * @return Binary
+     * @return Base16
      */
-    public static function Decode(int $networkPrefixMatch, $wif, bool $isCompressed = true): Binary
+    public static function Decode(int $networkPrefixMatch, $wif, bool $isCompressed = true): Base16
     {
         if (!$wif instanceof Base58Encoded) {
             if (!is_string($wif) || !$wif) {
@@ -80,6 +80,6 @@ class WIF
             $privateKey->substr($networkPrefixByteLen); // Remove first N bytes (network prefix len)
         }
 
-        return $privateKey;
+        return $privateKey->encode()->base16();
     }
 }

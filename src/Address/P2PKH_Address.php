@@ -38,7 +38,12 @@ class P2PKH_Address extends AbstractPaymentAddress
 
         // Prefix verify
         if ($node) {
-            if ($this->prefix->hexits(false) !== dechex($node->const_p2pkh_prefix)) {
+            $nodeP2PKH_Prefix = dechex($node->const_p2pkh_prefix);
+            if (strlen($nodeP2PKH_Prefix) % 2 !== 0) {
+                $nodeP2PKH_Prefix = "0" . $nodeP2PKH_Prefix;
+            }
+
+            if ($this->prefix->hexits(false) !== $nodeP2PKH_Prefix) {
                 throw new PaymentAddressException('Payment address P2PKH prefix does not match');
             }
         }
