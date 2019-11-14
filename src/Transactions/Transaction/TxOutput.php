@@ -14,8 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 
+use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\Script\Script;
-use FurqanSiddiqui\DataTypes\Base16;
 
 /**
  * Class TxOutput

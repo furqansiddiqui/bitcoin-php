@@ -14,12 +14,12 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
+use Comely\DataTypes\Buffer\Base16;
+use Comely\DataTypes\DataTypes;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
 use FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException;
 use FurqanSiddiqui\Bitcoin\Exception\ScriptParseException;
-use FurqanSiddiqui\DataTypes\Base16;
-use FurqanSiddiqui\DataTypes\DataTypes;
 
 /**
  * Class Script
@@ -133,7 +133,7 @@ class Script
     {
         if (!$script) {
             throw new ScriptParseException('OpCode script cannot be empty');
-        } elseif (!preg_match('/^[a-z0-9\_\s\(\)\[\]]+$/i', $script)) {
+        } elseif (!preg_match('/^[a-z0-9_\s()[]]+$/i', $script)) {
             throw new ScriptParseException('OpCode script contains illegal characters');
         }
 
@@ -148,7 +148,7 @@ class Script
             $index++;
 
             // Is PUSHDATA (1 to 75 bytes)
-            if (preg_match('/^PUSHDATA\([0-9]+\)\[[a-f0-9]+\]$/i', $block)) {
+            if (preg_match('/^PUSHDATA\([0-9]+\)\[[a-f0-9]+]$/i', $block)) {
                 $block = explode(")[", $block);
                 $data = substr($block[1], 0, -1);
                 $len = intval(explode("(", $block[0])[1]);
@@ -164,7 +164,7 @@ class Script
             }
 
             // Is PUSHDATA with variable binary length?
-            if (preg_match('/^PUSHDATA[0-9]+\[[a-f0-9]+\]$/i', $block)) {
+            if (preg_match('/^PUSHDATA[0-9]+\[[a-f0-9]+]$/i', $block)) {
                 $block = explode("[", substr($block, 0, -1));
                 $op = $block[0];
                 $data = $block[1];
@@ -203,7 +203,7 @@ class Script
         $this->hash160 = $this->buffer->binary()
             ->hash()->sha256()// 1x SHA256
             ->hash()->ripeMd160()// 1x RipeMD160
-            ->encode()->base16(); // Base16
+            ->base16(); // Base16
 
         $this->buffer->readOnly(true); // Set buffer in readOnly state
         $this->hash160->readOnly(true); // Set hash160 in readOnly state

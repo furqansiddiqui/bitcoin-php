@@ -14,6 +14,9 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets;
 
+use Comely\DataTypes\Buffer\Base16;
+use Comely\DataTypes\Buffer\Binary;
+use Comely\DataTypes\DataTypes;
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
 use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\BIP39\Mnemonic;
@@ -22,9 +25,6 @@ use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
 use FurqanSiddiqui\Bitcoin\Serialize\WIF;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
-use FurqanSiddiqui\DataTypes\Base16;
-use FurqanSiddiqui\DataTypes\Binary;
-use FurqanSiddiqui\DataTypes\DataTypes;
 
 /**
  * Class KeyPairFactory
@@ -64,7 +64,7 @@ class KeyPairFactory
             throw new KeyPairException('Failed to generate cryptographically secure pseudo-random bytes');
         }
 
-        $entropy = (new Binary($randomBytes))->encode()->base16();
+        $entropy = (new Binary($randomBytes))->base16();
         return new PrivateKey($this->node, $entropy, null);
     }
 

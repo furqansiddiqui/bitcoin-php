@@ -14,11 +14,11 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions;
 
+use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInput;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInputs;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxOutput;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxOutputs;
-use FurqanSiddiqui\DataTypes\Base16;
 
 /**
  * Class Transaction
@@ -211,6 +211,6 @@ class Transaction
         $hash = $serialized->binary()->hash()->sha256()
             ->hash()->sha256(); // SHA256 twice
 
-        return new SerializedTransaction($serialized, $hash->encode()->base16());
+        return new SerializedTransaction($serialized, $hash->base16());
     }
 }

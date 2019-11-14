@@ -14,13 +14,13 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets;
 
+use Comely\DataTypes\Buffer\Base16;
+use Comely\DataTypes\Buffer\Binary;
+use Comely\DataTypes\DataTypes;
 use FurqanSiddiqui\BIP39\Mnemonic;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\WalletsException;
 use FurqanSiddiqui\Bitcoin\Wallets\HD\MasterKey;
-use FurqanSiddiqui\DataTypes\Base16;
-use FurqanSiddiqui\DataTypes\Binary;
-use FurqanSiddiqui\DataTypes\DataTypes;
 
 /**
  * Class MasterKeyFactory

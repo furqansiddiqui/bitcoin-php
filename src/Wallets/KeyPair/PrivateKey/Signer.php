@@ -14,9 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
+use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
-use FurqanSiddiqui\DataTypes\Base16;
-use FurqanSiddiqui\ECDSA\Signature;
 
 /**
  * Class Signer

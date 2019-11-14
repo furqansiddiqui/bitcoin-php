@@ -14,8 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 
+use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\Script\Script;
-use FurqanSiddiqui\DataTypes\Base16;
 
 /**
  * Class TxInput
@@ -53,7 +53,7 @@ class TxInput implements TxInOutInterface
             $prevTxHash = new Base16($prevTxHash);
         }
 
-        if ($prevTxHash->size()->chars() !== 64) {
+        if ($prevTxHash->len() !== 64) {
             throw new \LengthException('TxInput arg $prevTxHash must be 64 hexits long');
         }
 

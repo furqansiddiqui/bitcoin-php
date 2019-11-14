@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\HD;
 
+use Comely\DataTypes\Buffer\Binary;
 use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PrivateKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
@@ -21,7 +22,6 @@ use FurqanSiddiqui\BIP32\ExtendedKey;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
-use FurqanSiddiqui\DataTypes\Binary;
 
 /**
  * Class ExtendedKeyPair

@@ -14,11 +14,11 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Address;
 
+use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
-use FurqanSiddiqui\DataTypes\Base16;
 
 /**
  * Class AbstractPaymentAddress
@@ -50,8 +50,8 @@ abstract class AbstractPaymentAddress implements PaymentAddressInterface
 
         $this->node = $node;
         $this->address = $addr;
-        $this->hash160 = $decoded->clone()->substr(-20)->encode()->base16(); // Get last 20 bytes
-        $this->prefix = $decoded->clone()->substr(0, -20)->encode()->base16(); // Get initial bytes, leading last 20
+        $this->hash160 = $decoded->clone()->substr(-20)->base16(); // Get last 20 bytes
+        $this->prefix = $decoded->clone()->substr(0, -20)->base16(); // Get initial bytes, leading last 20
 
         // Set buffers as readOnly
         $this->hash160->readOnly(true);

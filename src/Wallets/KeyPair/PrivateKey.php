@@ -14,13 +14,13 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
+use Comely\DataTypes\Buffer\Base16;
+use Comely\DataTypes\Buffer\Binary;
 use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey\Export;
-use FurqanSiddiqui\DataTypes\Base16;
-use FurqanSiddiqui\DataTypes\Binary;
 
 /**
  * Class PrivateKey
@@ -87,7 +87,7 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
         $buffer->append($message);
 
         $hash = $buffer->hash()->digest("sha256", 2);
-        $hash = $hash->get()->base16();
+        $hash = $hash->base16();
 
         $ecCurve = Curves::getInstanceOf($this->getEllipticCurveId());
         $signature = $ecCurve->sign($this->base16(), $hash);

@@ -14,11 +14,11 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
+use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
-use FurqanSiddiqui\DataTypes\Base16;
 
 /**
  * Class P2SH_Factory
@@ -65,7 +65,7 @@ class P2SH_Factory
             $rawP2SH->prepend(dechex($prefix));
         }
 
-        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->get(), $script->hash160(), $script);
+        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->value(), $script->hash160(), $script);
     }
 
     /**
@@ -88,7 +88,7 @@ class P2SH_Factory
             $rawP2SH->prepend(dechex($prefix));
         }
 
-        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->get(), $hash160);
+        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->value(), $hash160);
     }
 
     public function fromPublicKey(PublicKey $publicKey): P2SH_Address

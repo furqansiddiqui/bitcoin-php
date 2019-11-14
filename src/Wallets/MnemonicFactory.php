@@ -14,11 +14,11 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets;
 
+use Comely\DataTypes\Buffer\Binary;
+use Comely\DataTypes\DataTypes;
 use FurqanSiddiqui\BIP39\BIP39;
 use FurqanSiddiqui\BIP39\Mnemonic;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
-use FurqanSiddiqui\DataTypes\Binary;
-use FurqanSiddiqui\DataTypes\DataTypes;
 
 /**
  * Class MnemonicFactory
@@ -58,7 +58,7 @@ class MnemonicFactory
     public function useEntropy($entropy): Mnemonic
     {
         if ($entropy instanceof Binary) {
-            $entropy = $entropy->get()->hex();
+            $entropy = $entropy->base16()->hexits();
         }
 
         if (!is_string($entropy) || !DataTypes::isBase16($entropy)) {

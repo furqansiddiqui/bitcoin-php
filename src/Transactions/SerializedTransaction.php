@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions;
 
-use FurqanSiddiqui\DataTypes\Base16;
+use Comely\DataTypes\Buffer\Base16;
 
 /**
  * Class SerializedTransaction
@@ -40,7 +40,7 @@ class SerializedTransaction
         $this->hash = $this->serializedBase16->binary()
             ->hash()->sha256()
             ->hash()->sha256()// SHA256 twice
-            ->encode()->base16();
+            ->base16();
 
         // Compare hash?
         if ($hash) {

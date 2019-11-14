@@ -14,10 +14,10 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Serialize;
 
+use Comely\DataTypes\Buffer\Base16;
+use Comely\DataTypes\DataTypes;
 use FurqanSiddiqui\Base58\Base58Check;
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
-use FurqanSiddiqui\DataTypes\Base16;
-use FurqanSiddiqui\DataTypes\DataTypes;
 
 /**
  * Class WIF
@@ -73,13 +73,13 @@ class WIF
         if ($networkPrefixMatch) {
             $networkPrefixHex = dechex($networkPrefixMatch);
             $networkPrefixByteLen = strlen(hex2bin($networkPrefixHex));
-            if (!hash_equals($privateKey->copy(0, $networkPrefixByteLen)->encode()->base16()->hexits(), $networkPrefixHex)) {
+            if (!hash_equals($privateKey->copy(0, $networkPrefixByteLen)->base16()->hexits(), $networkPrefixHex)) {
                 throw new \UnexpectedValueException('Network prefix mismatch');
             }
 
             $privateKey->substr($networkPrefixByteLen); // Remove first N bytes (network prefix len)
         }
 
-        return $privateKey->encode()->base16();
+        return $privateKey->base16();
     }
 }

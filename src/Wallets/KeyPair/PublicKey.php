@@ -14,11 +14,11 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
+use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\BIP32\Extend\PrivateKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2PKH_Address;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
-use FurqanSiddiqui\DataTypes\Base16;
 use FurqanSiddiqui\ECDSA\ECC\EllipticCurveInterface;
 
 /**
@@ -77,7 +77,7 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
             $hash160 = $hash160->binary()->hash()->sha256()
                 ->hash()->ripeMd160();
 
-            $this->hash160 = $hash160->encode()->base16();
+            $this->hash160 = $hash160->base16();
             $this->hash160->readOnly(true);
         }
 
@@ -99,6 +99,6 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
             $rawP2PKH->prepend(dechex($prefix));
         }
 
-        return new P2PKH_Address($this->node, $base58Check->encode($rawP2PKH)->get(), $this->hash160);
+        return new P2PKH_Address($this->node, $base58Check->encode($rawP2PKH)->value(), $this->hash160);
     }
 }

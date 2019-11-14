@@ -14,8 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
+use Comely\DataTypes\Buffer\Binary;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
-use FurqanSiddiqui\DataTypes\Binary;
 
 /**
  * Class OpCode
@@ -134,7 +134,7 @@ class OpCode
             throw new \LengthException('PUSHDATA method can only be used for data between 1 and 75 bytes');
         }
 
-        $this->script[] = sprintf('PUSHDATA(%d)[%s]', $dataLen, $data->encode()->base16()->hexits(false));
+        $this->script[] = sprintf('PUSHDATA(%d)[%s]', $dataLen, $data->base16()->hexits(false));
         return $this;
     }
 

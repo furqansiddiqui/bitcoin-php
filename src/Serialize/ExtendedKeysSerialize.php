@@ -14,9 +14,9 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Serialize;
 
+use Comely\DataTypes\BcMath\BcMath;
+use Comely\DataTypes\DataTypes;
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
-use FurqanSiddiqui\BcMath\BcMath;
-use FurqanSiddiqui\DataTypes\DataTypes;
 
 /**
  * Class ExtendedKeysSerialize
@@ -45,7 +45,6 @@ class ExtendedKeysSerialize
         if (strlen($versionBytesHex) !== 8) {
             throw new \InvalidArgumentException('Version prefix must be 4 bytes');
         }
-
 
 
     }
