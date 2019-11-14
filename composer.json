@@ -19,7 +19,7 @@
     "comely-io/data-types": "^1.0.30",
     "furqansiddiqui/base58check-php": "^0.1.4",
     "furqansiddiqui/bip39-mnemonic-php": "^0.1.3",
-    "furqansiddiqui/bip32-keypair-php": "dev-master#026f18f"
+    "furqansiddiqui/bip32-keypair-php": "dev-master"
   },
   "autoload": {
     "psr-4": {
