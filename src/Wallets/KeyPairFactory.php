@@ -69,7 +69,7 @@ class KeyPairFactory
     }
 
     /**
-     * @param string|Binary $entropy
+     * @param string|Base16 $entropy
      * @return PrivateKey
      */
     public function privateKeyFromEntropy($entropy): PrivateKey
