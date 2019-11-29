@@ -94,11 +94,11 @@ class Signer
         // SignedMessage
         $signedMessage = new SignedMessage();
         $signedMessage->data = $hash32Byte->hexits(true); // Data with "0x" prefix
-        $signedMessage->signature = implode("", [
+        $signedMessage->signature = base64_encode(implode("", [
             chr($flag),
             $signature->r()->binary()->raw(),
             $signature->s()->binary()->raw(),
-        ]);
+        ]));
 
         return $signedMessage;
     }
