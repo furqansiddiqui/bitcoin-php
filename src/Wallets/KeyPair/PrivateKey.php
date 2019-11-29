@@ -15,12 +15,11 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
 use Comely\DataTypes\Buffer\Base16;
-use Comely\DataTypes\Buffer\Binary;
-use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey\Export;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey\Signer;
 
 /**
  * Class PrivateKey
@@ -70,34 +69,11 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
     }
 
     /**
-     * @param string $message
-     * @return string
-     * @throws \Exception
+     * @return Signer
      */
-    public function signMessage(string $message): string
+    public function sign(): Signer
     {
-        $signedMessagePrefix = $this->node()->const_signed_message_prefix;
-        $signedMessagePrefixLen = strlen($signedMessagePrefix);
-        $messageLen = strlen($message);
-
-        $buffer = new Binary();
-        $buffer->append(chr($signedMessagePrefixLen));
-        $buffer->append($signedMessagePrefix);
-        $buffer->append(chr($messageLen));
-        $buffer->append($message);
-
-        $hash = $buffer->hash()->digest("sha256", 2);
-        $hash = $hash->base16();
-
-        $ecCurve = Curves::getInstanceOf($this->getEllipticCurveId());
-        $signature = $ecCurve->sign($this->base16(), $hash);
-
-        $flag = $ecCurve->findRecoveryId($this->publicKey()->getEllipticCurvePubKeyObj(), $signature, $hash, true);
-        var_dump($flag);
-
-        $serialized = sprintf("%s%s%s", chr($flag), $signature->r()->binary(), $signature->s()->binary());
-        var_dump($serialized);
-        var_dump(base64_encode($serialized));
+        return new Signer($this);
     }
 
     /**
