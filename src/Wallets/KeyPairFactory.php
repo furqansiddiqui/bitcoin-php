@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets;
 
 use Comely\DataTypes\Buffer\Base16;
+use Comely\DataTypes\Buffer\Base64;
 use Comely\DataTypes\Buffer\Binary;
 use Comely\DataTypes\DataTypes;
 use FurqanSiddiqui\Base58\Result\Base58Encoded;
@@ -25,6 +26,7 @@ use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
 use FurqanSiddiqui\Bitcoin\Serialize\WIF;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
+use FurqanSiddiqui\ECDSA\Signature\Signature;
 
 /**
  * Class KeyPairFactory
@@ -128,6 +130,26 @@ class KeyPairFactory
     {
         $curve = Curves::getInstanceOf($this->node->const_ecdsa_curve);
         return new PublicKey($this->node, null, $curve, $publicKey, true);
+    }
+
+    /**
+     * @param Base64 $signed
+     * @param string $message
+     * @return PublicKey
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     */
+    public function publicKeyFromSignature(Base64 $signed, string $message): PublicKey
+    {
+        $curve = Curves::getInstanceOf($this->node->const_ecdsa_curve);
+        $rawSignature = $signed->binary()->readOnly(true);
+        $signature = new Signature(
+            $rawSignature->copy(1, 32)->base16(),
+            $rawSignature->copy(33)->base16()
+        );
+
+        $msgHash = $this->node->messages()->msgHash($message);
+        $ecPubKey = $curve->recoverPublicKeyFromSignature($signature, $msgHash, ord($rawSignature->value(0, 1)));
+        return new PublicKey($this->node, null, $curve, $ecPubKey->getCompressed(), true);
     }
 
     /**
