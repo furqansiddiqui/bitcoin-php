@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin;
 
 use FurqanSiddiqui\Bitcoin\Address\AddressFactory;
+use FurqanSiddiqui\Bitcoin\Messages\Messages;
 use FurqanSiddiqui\Bitcoin\Networks\BitcoinNetworkConstants;
 use FurqanSiddiqui\Bitcoin\Script\P2SH_Factory;
 use FurqanSiddiqui\Bitcoin\Script\ScriptFactory;
@@ -48,6 +49,8 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
     protected $scriptsFactory;
     /** @var P2SH_Factory */
     protected $p2shFactory;
+    /** @var Messages */
+    protected $messages;
 
     /**
      * AbstractBitcoinNode constructor.
@@ -134,5 +137,17 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
         }
 
         return $this->p2shFactory;
+    }
+
+    /**
+     * @return Messages
+     */
+    public function messages(): Messages
+    {
+        if (!$this->messages) {
+            $this->messages = new Messages($this);
+        }
+
+        return $this->messages;
     }
 }
