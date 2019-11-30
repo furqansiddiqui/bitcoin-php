@@ -19,6 +19,7 @@ use FurqanSiddiqui\BIP32\Extend\PrivateKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2PKH_Address;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey\Verifier;
 use FurqanSiddiqui\ECDSA\ECC\EllipticCurveInterface;
 
 /**
@@ -60,6 +61,14 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     }
 
     /**
+     * @return AbstractBitcoinNode
+     */
+    public function node(): AbstractBitcoinNode
+    {
+        return $this->node;
+    }
+
+    /**
      * @return PrivateKey
      */
     public function privateKey(): PrivateKeyInterface
@@ -82,6 +91,14 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
         }
 
         return $this->hash160;
+    }
+
+    /**
+     * @return Verifier
+     */
+    public function verify(): Verifier
+    {
+        return new Verifier($this);
     }
 
     /**
