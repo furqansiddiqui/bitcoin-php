@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
 use Comely\DataTypes\Buffer\Base16;
-use Comely\DataTypes\Buffer\Binary;
+use Comely\DataTypes\Buffer\Base64;
 use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\Bitcoin\Messages\SignedMessage;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
@@ -57,18 +57,7 @@ class Signer
      */
     public function message(string $message): SignedMessage
     {
-        $signedMessagePrefix = $this->privateKey->node()->const_signed_message_prefix;
-        $signedMessagePrefixLen = strlen($signedMessagePrefix);
-        $messageLen = strlen($message);
-
-        $buffer = new Binary();
-        $buffer->append(chr($signedMessagePrefixLen));
-        $buffer->append($signedMessagePrefix);
-        $buffer->append(chr($messageLen));
-        $buffer->append($message);
-
-        $digest = $buffer->hash()->digest("sha256", 2);
-        $signed = $this->sign($digest->base16());
+        $signed = $this->sign($this->privateKey->node()->messages()->msgHash($message));
         $signed->message = $message;
         return $signed;
     }
@@ -93,12 +82,12 @@ class Signer
 
         // SignedMessage
         $signedMessage = new SignedMessage();
-        $signedMessage->data = $hash32Byte->hexits(true); // Data with "0x" prefix
-        $signedMessage->signature = base64_encode(implode("", [
+        $signedMessage->msgHash = $hash32Byte;
+        $signedMessage->signature = new Base64(base64_encode(implode("", [
             chr($flag),
             $signature->r()->binary()->raw(),
             $signature->s()->binary()->raw(),
-        ]));
+        ])));
 
         return $signedMessage;
     }
