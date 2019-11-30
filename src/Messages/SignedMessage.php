@@ -14,16 +14,21 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Messages;
 
+use Comely\DataTypes\Buffer\Base16;
+use Comely\DataTypes\Buffer\Base64;
+
 /**
  * Class SignedMessage
  * @package FurqanSiddiqui\Bitcoin\Messages
  */
 class SignedMessage
 {
-    /** @var string */
+    /** @var Base64 */
     public $signature;
-    /** @var string */
-    public $data;
+    /** @var Base16 */
+    public $msgHash;
     /** @var string|null */
     public $message;
+    /** @var string|null */
+    public $address;
 }
