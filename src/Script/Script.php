@@ -133,7 +133,7 @@ class Script
     {
         if (!$script) {
             throw new ScriptParseException('OpCode script cannot be empty');
-        } elseif (!preg_match('/^[a-z0-9_\s()[]]+$/i', $script)) {
+        } elseif (!preg_match('/^[a-z0-9_\s()\[\]]+$/i', $script)) {
             throw new ScriptParseException('OpCode script contains illegal characters');
         }
 
