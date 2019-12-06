@@ -106,10 +106,10 @@ class Signer
             true
         );
 
-        return implode("", [
+        return new Binary(implode("", [
             chr($flag),
             $signature->r()->binary()->raw(),
             $signature->s()->binary()->raw(),
-        ]);
+        ]));
     }
 }
