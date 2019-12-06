@@ -167,7 +167,9 @@ class Transaction
             $inputIndex++;
 
             // Append 32 byte prev. Tx hash
-            $serialized->append($input->prevTxHash());
+            // Reverse byte order
+            $prevTxHashRev = implode("", array_reverse(str_split($input->prevTxHash()->hexits(false), 2)));
+            $serialized->append($prevTxHashRev);
 
             // Four byte output index
             $serialized->append($input->indexUInt32LE);
@@ -181,6 +183,7 @@ class Transaction
                 } elseif ($signingMethod instanceof PrivateKey) {
                     // Sign with private key
                     $signature = $signingMethod->sign()->transaction($this->serialize(false));
+                    $signature = $signature->copy();
                     $signature->append("01"); // One-byte hash codee type
 
                     $scriptSig = $this->node->script()->new();
