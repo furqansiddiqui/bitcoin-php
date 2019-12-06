@@ -114,8 +114,8 @@ class OpCode
      */
     public function OP(string $op): self
     {
-        $flag = sprintf("OP_%s", strtoupper($op));
-        if (!in_array($flag, self::OP_CODES)) {
+        $flag = strtoupper($op);
+        if (!array_key_exists($flag, self::OP_CODES)) {
             throw new \OutOfBoundsException('Requested OP code is not registered/supported');
         }
 
