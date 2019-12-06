@@ -15,9 +15,10 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
 use Comely\DataTypes\Buffer\Base16;
-use Comely\DataTypes\Buffer\Base64;
+use Comely\DataTypes\Buffer\Binary;
 use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\Bitcoin\Messages\SignedMessage;
+use FurqanSiddiqui\Bitcoin\Transactions\SerializedTransaction;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
 /**
@@ -57,9 +58,19 @@ class Signer
      */
     public function message(string $message): SignedMessage
     {
-        $signed = $this->sign($this->privateKey->node()->messages()->msgHash($message));
+        $signed = $this->hash32($this->privateKey->node()->messages()->msgHash($message));
         $signed->message = $message;
         return $signed;
+    }
+
+    /**
+     * @param SerializedTransaction $tx
+     * @return Base16
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     */
+    public function transaction(SerializedTransaction $tx): Base16
+    {
+        return $this->sign($tx->hash())->base16();
     }
 
     /**
@@ -67,7 +78,22 @@ class Signer
      * @return SignedMessage
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
      */
-    public function sign(Base16 $hash32Byte): SignedMessage
+    public function hash32(Base16 $hash32Byte): SignedMessage
+    {
+        // SignedMessage
+        $signedMessage = new SignedMessage();
+        $signedMessage->signature = $this->sign($hash32Byte)->base64();
+        $signedMessage->msgHash = $hash32Byte;
+
+        return $signedMessage;
+    }
+
+    /**
+     * @param Base16 $hash32Byte
+     * @return Binary
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     */
+    private function sign(Base16 $hash32Byte): Binary
     {
         $ecCurve = Curves::getInstanceOf($this->privateKey->getEllipticCurveId());
         $signature = $ecCurve->sign($this->privateKey->base16(), $hash32Byte);
@@ -80,15 +106,10 @@ class Signer
             true
         );
 
-        // SignedMessage
-        $signedMessage = new SignedMessage();
-        $signedMessage->msgHash = $hash32Byte;
-        $signedMessage->signature = new Base64(base64_encode(implode("", [
+        return implode("", [
             chr($flag),
             $signature->r()->binary()->raw(),
             $signature->s()->binary()->raw(),
-        ])));
-
-        return $signedMessage;
+        ]);
     }
 }

@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 
 use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\Script\Script;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
 /**
  * Class TxInput
@@ -32,18 +33,22 @@ class TxInput implements TxInOutInterface
     /** @var int */
     private $index;
     /** @var Script */
-    private $scriptSig;
+    private $scriptPubKey;
     /** @var int|null */
     private $seqNo;
+    /** @var null|Script */
+    private $scriptSig;
+    /** @var null|PrivateKey */
+    private $privateKey;
 
     /**
      * TxInput constructor.
      * @param $prevTxHash
      * @param int $index
-     * @param Script $scriptSig
+     * @param Script $scriptPubKey
      * @param int|null $seqNo
      */
-    public function __construct($prevTxHash, int $index, Script $scriptSig, ?int $seqNo = null)
+    public function __construct($prevTxHash, int $index, Script $scriptPubKey, ?int $seqNo = null)
     {
         if (!$prevTxHash instanceof Base16) {
             if (!is_string($prevTxHash)) {
@@ -60,7 +65,7 @@ class TxInput implements TxInOutInterface
         $this->prevTxHash = $prevTxHash;
         $this->prevTxHash->readOnly(true);
         $this->index = $index;
-        $this->scriptSig = $scriptSig;
+        $this->scriptPubKey = $scriptPubKey;
         $this->seqNo = $seqNo ?? self::DEFAULT_SEQUENCE;
     }
 
@@ -101,9 +106,37 @@ class TxInput implements TxInOutInterface
     /**
      * @return Script
      */
-    public function scriptSig(): Script
+    public function scriptPubKey(): Script
     {
-        return $this->scriptSig;
+        return $this->scriptPubKey;
+    }
+
+    /**
+     * @param Script $scriptSig
+     * @return $this
+     */
+    public function setScriptSig(Script $scriptSig): self
+    {
+        $this->scriptSig = $scriptSig;
+        return $this;
+    }
+
+    /**
+     * @param PrivateKey $privateKey
+     * @return $this
+     */
+    public function signWithPrivateKey(PrivateKey $privateKey): self
+    {
+        $this->privateKey = $privateKey;
+        return $this;
+    }
+
+    /**
+     * @return Script|PrivateKey|null
+     */
+    public function getSigningMethod()
+    {
+        return $this->scriptSig ?? $this->privateKey ?? null;
     }
 
     /**

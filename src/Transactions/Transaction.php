@@ -15,10 +15,14 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Transactions;
 
 use Comely\DataTypes\Buffer\Base16;
+use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException;
+use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInput;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInputs;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxOutput;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxOutputs;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
 /**
  * Class Transaction
@@ -28,6 +32,8 @@ use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxOutputs;
  */
 class Transaction
 {
+    /** @var AbstractBitcoinNode */
+    private $node;
     /** @var int */
     private $version;
     /** @var TxInputs */
@@ -44,9 +50,11 @@ class Transaction
 
     /**
      * Transaction constructor.
+     * @param AbstractBitcoinNode $node
      */
-    public function __construct()
+    public function __construct(AbstractBitcoinNode $node)
     {
+        $this->node = $node;
         $this->version = 1;
         $this->inputs = new TxInputs($this);
         $this->outputs = new TxOutputs($this);
@@ -132,9 +140,13 @@ class Transaction
     }
 
     /**
+     * @param bool $includeSignatures
      * @return SerializedTransaction
+     * @throws TransactionInputSignException
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
-    public function serialize(): SerializedTransaction
+    public function serialize(bool $includeSignatures): SerializedTransaction
     {
         $serialized = new Base16();
 
@@ -149,23 +161,52 @@ class Transaction
         // Append number of inputs
         $serialized->append(dechex($this->inputs->count()));
 
+        $inputIndex = -1;
         /** @var TxInput $input */
         foreach ($this->inputs as $input) {
+            $inputIndex++;
+
             // Append 32 byte prev. Tx hash
             $serialized->append($input->prevTxHash());
 
             // Four byte output index
             $serialized->append($input->indexUInt32LE);
 
-            // Signing scriptSig
-            $scriptSig = $input->scriptSig();
-            $scriptSigLen = $scriptSig->script()->binary()->size()->bytes();
+            // Include signatures?
+            if ($includeSignatures) {
+                $signingMethod = $input->getSigningMethod();
+                if ($signingMethod instanceof Script) {
+                    // Pre-defined scriptSig
+                    $scriptSig = $signingMethod;
+                } elseif ($signingMethod instanceof PrivateKey) {
+                    // Sign with private key
+                    $signature = $signingMethod->sign()->transaction($this->serialize(false));
+                    $signature->append("01"); // One-byte hash codee type
+
+                    $scriptSig = $this->node->script()->new();
+                    $scriptSig->PUSHDATA($signature->binary());
+                    $scriptSig->PUSHDATA($signingMethod->publicKey()->compressed()->binary());
+                    $scriptSig = $scriptSig->script();
+                    $input->setScriptSig($scriptSig);
+                } else {
+                    throw new TransactionInputSignException(
+                        sprintf('No signature available for input # %d (index: %d)', $inputIndex + 1, $inputIndex),
+                        $inputIndex
+                    );
+                }
+            } else {
+                // Use scriptPubKey in place of scriptSig
+                $scriptSig = $input->scriptPubKey();
+            }
+
+            $scriptSigBase16 = $scriptSig->script();
+            $scriptSigLen = $scriptSigBase16->binary()->size()->bytes();
 
             // 1 byte scriptSig len
             $serialized->append(dechex($scriptSigLen));
 
             // Append actual scriptSig
-            $serialized->append($scriptSig->script());
+            $serialized->append($scriptSigBase16);
 
             // 4 byte sequence number
             $serialized->append($input->seqUInt32LE);
@@ -203,6 +244,11 @@ class Transaction
 
         // Finally, Tx lock time! 4 byte
         $serialized->append($this->lockTimeUInt32LE);
+
+        // Add "hash code" type?
+        if (!$includeSignatures) {
+            $serialized->append("01000000");
+        }
 
         // Set buffer state as readOnly
         $serialized->readOnly(true);
