@@ -22,6 +22,8 @@ use FurqanSiddiqui\Bitcoin\Networks;
  */
 class Bitcoin
 {
+    public const VERSION = "0.20.1";
+
     /**
      * @return Networks\Bitcoin
      */
