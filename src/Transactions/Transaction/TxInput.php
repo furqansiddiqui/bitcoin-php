@@ -83,7 +83,7 @@ class TxInput implements TxInOutInterface
             "prevTxHash" => $this->prevTxHash->hexits(false),
             "prevTxIndex" => [
                 "dec" => $this->index,
-                "uInt32LE" => $this->indexUInt32LE
+                "uInt32LE" => $this->indexUInt32LE->hexits(false)
             ],
             "script" => [
                 "script" => null,
@@ -92,7 +92,7 @@ class TxInput implements TxInOutInterface
             ],
             "seqNo" => [
                 "dec" => $this->seqNo,
-                "uInt32LE" => $this->seqUInt32LE
+                "uInt32LE" => $this->seqUInt32LE->hexits(false)
             ],
         ];
 

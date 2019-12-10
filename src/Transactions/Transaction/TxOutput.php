@@ -95,7 +95,7 @@ class TxOutput implements TxInOutInterface
         return [
             "value" => [
                 "dec" => $this->valueAsInt,
-                "uInt64LE" => $this->valueUInt64LE
+                "uInt64LE" => $this->valueUInt64LE->hexits(false)
             ],
             "script" => [
                 "script" => $this->script->raw(),
