@@ -59,6 +59,7 @@ class RawTransactionDecoder
             $segWitFlag = $rawTxStream->next(2);
             if (bin2hex($segWitFlag) === "0001") {
                 $txIsSegWit = true;
+                $tx->isSegWit(); // Mark SegWit flag
             } else {
                 $rawTxStream->setPointer(4); // Reverse pointer
             }
