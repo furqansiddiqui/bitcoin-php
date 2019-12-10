@@ -216,7 +216,7 @@ class Transaction
         }
 
         // Append number of inputs
-        $serialized->append(dechex($this->inputs->count()));
+        $serialized->append(VarInt::Encode($this->inputs->count()));
 
         $inputIndex = -1;
         /** @var TxInput $input */
@@ -272,7 +272,7 @@ class Transaction
                 $scriptSigLen = $scriptSigBase16->binary()->size()->bytes();
 
                 // 1 byte scriptSig len
-                $serialized->append(dechex($scriptSigLen));
+                $serialized->append(VarInt::Encode($scriptSigLen));
 
                 // Append actual scriptSig
                 $serialized->append($scriptSigBase16);
@@ -293,7 +293,7 @@ class Transaction
         }
 
         // Append number of outputs
-        $serialized->append(dechex($this->outputs->count()));
+        $serialized->append(VarInt::Encode($this->outputs->count()));
 
         /** @var TxOutput $output */
         foreach ($this->outputs->all() as $output) {
@@ -305,7 +305,7 @@ class Transaction
             $scriptPubKeyLen = $scriptPubKey->script()->binary()->size()->bytes();
 
             // 1 byte scriptPubKey len
-            $serialized->append(dechex($scriptPubKeyLen));
+            $serialized->append(VarInt::Encode($scriptPubKeyLen));
 
             // Append actual scriptPubKey
             $serialized->append($scriptPubKey->script());
@@ -325,10 +325,10 @@ class Transaction
                     throw new TransactionEncodeException(sprintf('Missing SegWit data for input # %d', $segWitInputNo));
                 }
 
-                $serialized->append(dechex(count($inWitness)));
+                $serialized->append(VarInt::Encode(count($inWitness)));
                 /** @var Base16 $inWitnessElem */
                 foreach ($inWitness as $inWitnessElem) {
-                    $serialized->append(VarInt::Encode($inWitnessElem->binary()->len()));
+                    $serialized->append(VarInt::Encode($inWitnessElem->binary()->size()->bytes()));
                     $serialized->append($inWitnessElem);
                 }
 
