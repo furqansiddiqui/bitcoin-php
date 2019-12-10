@@ -128,7 +128,7 @@ class RawTransactionDecoder
 
             // Lock time
             $decodeProgress = "lock time";
-            $tx->setLockTime(VarInt::Decode($rawTxStream->next(4), 4));
+            $tx->setLockTime(VarInt::Decode(bin2hex($rawTxStream->next(4)), 4));
         } catch (\UnderflowException $e) {
             if ($e->getCode() === ByteReader::UNDERFLOW_EX_SIGNAL) {
                 throw new TransactionDecodeException(
