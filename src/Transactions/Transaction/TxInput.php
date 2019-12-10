@@ -3,7 +3,7 @@
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -45,10 +45,10 @@ class TxInput implements TxInOutInterface
      * TxInput constructor.
      * @param $prevTxHash
      * @param int $index
-     * @param Script $scriptPubKey
+     * @param Script|null $scriptPubKey
      * @param int|null $seqNo
      */
-    public function __construct($prevTxHash, int $index, Script $scriptPubKey, ?int $seqNo = null)
+    public function __construct($prevTxHash, int $index, ?Script $scriptPubKey, ?int $seqNo = null)
     {
         if (!$prevTxHash instanceof Base16) {
             if (!is_string($prevTxHash)) {
@@ -104,9 +104,9 @@ class TxInput implements TxInOutInterface
     }
 
     /**
-     * @return Script
+     * @return Script|null
      */
-    public function scriptPubKey(): Script
+    public function scriptPubKey(): ?Script
     {
         return $this->scriptPubKey;
     }

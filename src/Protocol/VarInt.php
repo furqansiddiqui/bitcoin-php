@@ -3,7 +3,7 @@
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -50,6 +50,25 @@ class VarInt
         return "ff" . bin2hex(pack("P", $dec));
     }
 
+    public static function Size(string $hexVarInt): int
+    {
+        $firstByte = strtolower(substr($hexVarInt, 0, 2));
+        $size = 1;
+        switch ($firstByte) {
+            case "ff":
+                $size = 8;
+                break;
+            case "fe":
+                $size = 4;
+                break;
+            case "fd":
+                $size = 2;
+                break;
+        }
+
+        return $size;
+    }
+
     /**
      * @param string $hexVarInt
      * @param int|null $size
@@ -59,21 +78,9 @@ class VarInt
     {
         // Determine size if arg is NULL
         if (!$size > 0) {
-            $firstByte = strtolower(substr($hexVarInt, 0, 2));
-            $size = 1;
-            switch ($firstByte) {
-                case "ff":
-                    $size = 8;
-                    $hexVarInt = substr($hexVarInt, 2);
-                    break;
-                case "fe":
-                    $size = 4;
-                    $hexVarInt = substr($hexVarInt, 2);
-                    break;
-                case "fd":
-                    $size = 2;
-                    $hexVarInt = substr($hexVarInt, 2);
-                    break;
+            $size = self::Size($hexVarInt);
+            if ($size !== 1) {
+                $hexVarInt = substr($hexVarInt, 0, 2);
             }
         }
 
