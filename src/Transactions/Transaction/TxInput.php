@@ -80,7 +80,7 @@ class TxInput implements TxInOutInterface
     public function dump(): array
     {
         $inputData = [
-            "prevTxHash" => $this->prevTxHash,
+            "prevTxHash" => $this->prevTxHash->hexits(false),
             "prevTxIndex" => [
                 "dec" => $this->index,
                 "uInt32LE" => $this->indexUInt32LE
