@@ -65,12 +65,4 @@ class SerializedTransaction
     {
         return $this->hash;
     }
-
-    /**
-     * @return Transaction
-     */
-    public function decode(): Transaction
-    {
-        return Transaction::Decode($this->serializedBase16);
-    }
 }

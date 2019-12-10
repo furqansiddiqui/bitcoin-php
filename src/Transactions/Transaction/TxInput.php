@@ -40,6 +40,8 @@ class TxInput implements TxInOutInterface
     private $scriptSig;
     /** @var null|PrivateKey */
     private $privateKey;
+    /** @var array */
+    private $segWitData;
 
     /**
      * TxInput constructor.
@@ -67,6 +69,7 @@ class TxInput implements TxInOutInterface
         $this->index = $index;
         $this->scriptPubKey = $scriptPubKey;
         $this->seqNo = $seqNo ?? self::DEFAULT_SEQUENCE;
+        $this->segWitData = [];
     }
 
     /**
@@ -137,6 +140,24 @@ class TxInput implements TxInOutInterface
     public function getSigningMethod()
     {
         return $this->scriptSig ?? $this->privateKey ?? null;
+    }
+
+    /**
+     * @param Base16 $script
+     * @return $this
+     */
+    public function setWitnessData(Base16 $script): self
+    {
+        $this->segWitData[] = $script;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function segWitData(): array
+    {
+        return $this->segWitData;
     }
 
     /**
