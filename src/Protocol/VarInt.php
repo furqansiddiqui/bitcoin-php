@@ -50,6 +50,10 @@ class VarInt
         return "ff" . bin2hex(pack("P", $dec));
     }
 
+    /**
+     * @param string $hexVarInt
+     * @return int
+     */
     public static function Size(string $hexVarInt): int
     {
         $firstByte = strtolower(substr($hexVarInt, 0, 2));
