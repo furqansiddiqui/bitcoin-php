@@ -31,6 +31,8 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
  * @package FurqanSiddiqui\Bitcoin\Transactions
  * @property-read Base16 $verUInt32LE
  * @property-read Base16 $lockTimeUInt32LE
+ * @property-read int $size
+ * @property-read int $weight
  */
 class Transaction
 {
