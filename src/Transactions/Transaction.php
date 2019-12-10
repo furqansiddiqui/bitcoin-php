@@ -93,6 +93,26 @@ class Transaction
     }
 
     /**
+     * @return array
+     */
+    public function dump(): array
+    {
+        return [
+            "version" => [
+                "dec" => $this->version,
+                "uInt32LE" => $this->verUInt32LE,
+            ],
+            "isSegWit" => $this->isSegWit,
+            "inputs" => $this->inputs()->dump(),
+            "outputs" => $this->outputs->dump(),
+            "lockTime" => [
+                "dec" => $this->lockTime,
+                "uInt32LE" => $this->lockTimeUInt32LE
+            ]
+        ];
+    }
+
+    /**
      * @param int $version
      * @return Transaction
      */

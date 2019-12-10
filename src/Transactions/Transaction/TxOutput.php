@@ -28,21 +28,21 @@ class TxOutput implements TxInOutInterface
     /** @var int */
     private $value;
     /** @var Script */
-    private $scriptPubKey;
+    private $script;
 
     /**
      * TxOutput constructor.
      * @param int $satoshis
-     * @param Script $scriptPubKey
+     * @param Script $script
      */
-    public function __construct(int $satoshis, Script $scriptPubKey)
+    public function __construct(int $satoshis, Script $script)
     {
         if ($satoshis < 0) {
             throw new \InvalidArgumentException('Tx output value must be positive integer');
         }
 
         $this->value = $satoshis;
-        $this->scriptPubKey = $scriptPubKey;
+        $this->script = $script;
     }
 
     /**
@@ -74,8 +74,34 @@ class TxOutput implements TxInOutInterface
     /**
      * @return Script
      */
+    public function script(): Script
+    {
+        return $this->script;
+    }
+
+    /**
+     * @return Script
+     */
     public function scriptPubKey(): Script
     {
-        return $this->scriptPubKey;
+        return $this->script;
+    }
+
+    /**
+     * @return array
+     */
+    public function dump(): array
+    {
+        return [
+            "value" => [
+                "dec" => $this->valueAsInt,
+                "uInt64LE" => $this->valueUInt64LE
+            ],
+            "script" => [
+                "script" => $this->script->raw(),
+                "base16" => $this->script->script()->hexits(false),
+                "type" => null,
+            ]
+        ];
     }
 }

@@ -53,6 +53,20 @@ abstract class AbstractTxInOut implements \Countable, \Iterator
     }
 
     /**
+     * @return array
+     */
+    public function dump(): array
+    {
+        $list = [];
+        /** @var TxInOutInterface $item */
+        foreach ($this->list as $item) {
+            $list[] = $item->dump();
+        }
+
+        return $list;
+    }
+
+    /**
      * @return int
      */
     public function count(): int

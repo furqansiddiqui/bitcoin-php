@@ -20,4 +20,8 @@ namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
  */
 interface TxInOutInterface
 {
+    /**
+     * @return array
+     */
+    public function dump(): array;
 }

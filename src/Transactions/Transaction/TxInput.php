@@ -73,6 +73,56 @@ class TxInput implements TxInOutInterface
     }
 
     /**
+     * @return array
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
+    public function dump(): array
+    {
+        $inputData = [
+            "prevTxHash" => $this->prevTxHash,
+            "prevTxIndex" => [
+                "dec" => $this->index,
+                "uInt32LE" => $this->indexUInt32LE
+            ],
+            "script" => [
+                "script" => null,
+                "base16" => null,
+                "type" => null
+            ],
+            "seqNo" => [
+                "dec" => $this->seqNo,
+                "uInt32LE" => $this->seqUInt32LE
+            ],
+        ];
+
+        // Script?
+        $dumpScript = $this->scriptSig ?? $this->scriptPubKey ?? null;
+        if ($dumpScript) {
+            $inputData["script"]["script"] = $dumpScript->raw();
+            $inputData["script"]["base16"] = $dumpScript->script()->hexits(false);
+        }
+
+        // Has PrivateKey?
+        if ($this->privateKey) {
+            $inputData["privateKey"] = [
+                "p2pkh" => $this->privateKey->publicKey()->p2pkh()->address()
+            ];
+        }
+
+        // Witness Data?
+        if ($this->segWitData) {
+            $inputData["witness"] = [];
+            /** @var Base16 $witness */
+            foreach ($this->segWitData as $witness) {
+                $inputData["witness"][] = $witness->hexits(false);
+            }
+        }
+
+        return $inputData;
+    }
+
+    /**
      * @param $prop
      * @return Base16
      */
