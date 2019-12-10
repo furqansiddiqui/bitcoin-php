@@ -29,7 +29,7 @@ class VarInt
         // Single byte integer
         if ($dec < 0xfd) {
             $hex = dechex($dec);
-            if ($hex % 2 !== 0) {
+            if (strlen($hex) % 2 !== 0) {
                 $hex = "0" . $hex;
             }
 
