@@ -15,7 +15,9 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 
 use Comely\DataTypes\Buffer\Base16;
+use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
+use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
 /**
@@ -23,11 +25,16 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
  * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
  * @property-read Base16 $indexUInt32LE
  * @property-read Base16 $seqUInt32LE
+ * @property-read string|null $scriptPubKeyType
+ * @property-read string|null $scriptPubKeyAddr
+ * @property-read string|null $scriptPubKeyError
  */
 class TxInput implements TxInOutInterface
 {
     private const DEFAULT_SEQUENCE = 0xFFFFFFFF;
 
+    /** @var Transaction */
+    private $tx;
     /** @var Base16 */
     private $prevTxHash;
     /** @var int */
@@ -42,15 +49,25 @@ class TxInput implements TxInOutInterface
     private $privateKey;
     /** @var array */
     private $segWitData;
+    /** @var null|Script */
+    private $redeemScript;
+
+    /** @var null|string */
+    private $scriptPubKeyType;
+    /** @var null|string */
+    private $scriptPubKeyAddr;
+    /** @var null|string */
+    private $scriptPubKeyError;
 
     /**
      * TxInput constructor.
+     * @param Transaction $tx
      * @param $prevTxHash
      * @param int $index
-     * @param Script|null $scriptPubKey
+     * @param Script|null $scriptPubKey (Optional, MUST provider if constructing new transaction; will not have if decoded an old transaction)
      * @param int|null $seqNo
      */
-    public function __construct($prevTxHash, int $index, ?Script $scriptPubKey, ?int $seqNo = null)
+    public function __construct(Transaction $tx, $prevTxHash, int $index, ?Script $scriptPubKey, ?int $seqNo = null)
     {
         if (!$prevTxHash instanceof Base16) {
             if (!is_string($prevTxHash)) {
@@ -64,67 +81,29 @@ class TxInput implements TxInOutInterface
             throw new \LengthException('TxInput arg $prevTxHash must be 64 hexits long');
         }
 
+        $this->tx = $tx;
         $this->prevTxHash = $prevTxHash;
         $this->prevTxHash->readOnly(true);
         $this->index = $index;
         $this->scriptPubKey = $scriptPubKey;
         $this->seqNo = $seqNo ?? self::DEFAULT_SEQUENCE;
         $this->segWitData = [];
-    }
 
-    /**
-     * @return array
-     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
-     */
-    public function dump(): array
-    {
-        $inputData = [
-            "prevTxHash" => $this->prevTxHash->hexits(false),
-            "prevTxIndex" => [
-                "dec" => $this->index,
-                "uInt32LE" => $this->indexUInt32LE->hexits(false)
-            ],
-            "script" => [
-                "script" => null,
-                "base16" => null,
-                "type" => null
-            ],
-            "seqNo" => [
-                "dec" => $this->seqNo,
-                "uInt32LE" => $this->seqUInt32LE->hexits(false)
-            ],
-        ];
-
-        // Script?
-        $dumpScript = $this->scriptSig ?? $this->scriptPubKey ?? null;
-        if ($dumpScript) {
-            $inputData["script"]["script"] = $dumpScript->raw();
-            $inputData["script"]["base16"] = $dumpScript->script()->hexits(false);
-        }
-
-        // Has PrivateKey?
-        if ($this->privateKey) {
-            $inputData["privateKey"] = [
-                "p2pkh" => $this->privateKey->publicKey()->p2pkh()->address()
-            ];
-        }
-
-        // Witness Data?
-        if ($this->segWitData) {
-            $inputData["witness"] = [];
-            /** @var Base16 $witness */
-            foreach ($this->segWitData as $witness) {
-                $inputData["witness"][] = $witness->hexits(false);
+        // Convert ScriptPubKey to address and appropriate address-type
+        if ($scriptPubKey) {
+            try {
+                $address = $tx->network->address()->addressFromScript($scriptPubKey);
+                $this->scriptPubKeyType = $address->type();
+                $this->scriptPubKeyAddr = $address->address();
+            } catch (PaymentAddressException $e) {
+                $this->scriptPubKeyError = $e->getMessage();
             }
         }
-
-        return $inputData;
     }
 
     /**
      * @param $prop
-     * @return Base16
+     * @return Base16|string|null
      */
     public function __get($prop)
     {
@@ -135,6 +114,10 @@ class TxInput implements TxInOutInterface
             case "seqUInt32LE":
                 $uInt32LE = bin2hex(pack("V", $this->seqNo));
                 return new Base16($uInt32LE);
+            case "scriptPubKeyError":
+            case "scriptPubKeyType":
+            case "scriptPubKeyAddress":
+                return $this->$prop;
         }
 
         throw new \OutOfBoundsException('Cannot get value of inaccessible property');
@@ -175,6 +158,16 @@ class TxInput implements TxInOutInterface
     }
 
     /**
+     * @param Script $redeemScript
+     * @return $this
+     */
+    public function setRedeemScript(Script $redeemScript): self
+    {
+        $this->redeemScript = $redeemScript;
+        return $this;
+    }
+
+    /**
      * @param PrivateKey $privateKey
      * @return $this
      */
@@ -205,9 +198,17 @@ class TxInput implements TxInOutInterface
     /**
      * @return array
      */
-    public function segWitData(): array
+    public function getSegWitData(): array
     {
         return $this->segWitData;
+    }
+
+    /**
+     * @return Script|null
+     */
+    public function getRedeemScript(): ?Script
+    {
+        return $this->redeemScript;
     }
 
     /**
@@ -216,5 +217,75 @@ class TxInput implements TxInOutInterface
     public function seqNo(): int
     {
         return $this->seqNo;
+    }
+
+    /**
+     * @return array
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
+    public function dump(): array
+    {
+        $inputData = [
+            "prevTxHash" => $this->prevTxHash->hexits(false),
+            "prevTxIndex" => [
+                "dec" => $this->index,
+                "uInt32LE" => $this->indexUInt32LE->hexits(false)
+            ],
+            "script" => null,
+            "scriptPubKey" => null,
+            "seqNo" => [
+                "dec" => $this->seqNo,
+                "uInt32LE" => $this->seqUInt32LE->hexits(false)
+            ]
+        ];
+
+        // ScriptSig?
+        if ($this->scriptSig) {
+            $inputData["scriptSig"] = [
+                "script" => $this->scriptSig->raw(),
+                "base16" => $this->scriptSig->script()->hexits(false)
+            ];
+        }
+
+        // ScriptPubKey?
+        if ($this->scriptPubKey) {
+            $inputData["scriptPubKey"] = [
+                "script" => $this->scriptPubKey->raw(),
+                "base16" => $this->scriptPubKey->script()->hexits(false),
+                "type" => $this->scriptPubKeyType,
+                "address" => $this->scriptPubKeyAddr,
+            ];
+
+            if ($this->scriptPubKeyError) {
+                $inputData["scriptPubKey"]["error"] = $this->scriptPubKeyError;
+            }
+        }
+
+        // RedeemScript?
+        if ($this->redeemScript) {
+            $inputData["redeemScript"] = [
+                "script" => $this->redeemScript->raw(),
+                "base16" => $this->redeemScript->script()->hexits(false)
+            ];
+        }
+
+        // Has PrivateKey?
+        if ($this->privateKey) {
+            $inputData["privateKey"] = [
+                "p2pkh" => $this->privateKey->publicKey()->p2pkh()->address()
+            ];
+        }
+
+        // Witness Data?
+        if ($this->segWitData) {
+            $inputData["witness"] = [];
+            /** @var Base16 $witness */
+            foreach ($this->segWitData as $witness) {
+                $inputData["witness"][] = $witness->hexits(false);
+            }
+        }
+
+        return $inputData;
     }
 }
