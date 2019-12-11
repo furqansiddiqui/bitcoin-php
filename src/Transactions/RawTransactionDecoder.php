@@ -29,6 +29,11 @@ use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInput;
  */
 class RawTransactionDecoder
 {
+    private const INPUT_SCRIPT_PUB_KEYS = [
+        "/^76a914[a-f0-9]{40}88ac$/i",
+        "/^a914[a-f0-9]{40}87$/i",
+    ];
+
     /**
      * @param AbstractBitcoinNode $network
      * @param Base16 $rawTx
@@ -73,6 +78,8 @@ class RawTransactionDecoder
                     $prevTxHash = implode("", array_reverse(str_split(bin2hex($rawTxStream->next(32)), 2)));
                     $prevTxIndex = VarInt::Decode(bin2hex($rawTxStream->next(4)), 4);
                     $inputScript = null;
+                    $inputScriptSig = null;
+                    $inputScriptPubKey = null;
                     $scriptLen = self::readNextVarInt($rawTxStream);
                     if ($scriptLen) {
                         try {
@@ -80,12 +87,29 @@ class RawTransactionDecoder
                         } catch (ScriptException $e) {
                             throw TransactionDecodeException::InputScriptParseException($i, $e);
                         }
+
+                        // Determine script Type
+                        $inputScriptHex = $inputScript->script()->hexits(false);
+                        foreach (self::INPUT_SCRIPT_PUB_KEYS as $inputScriptExp) {
+                            if (preg_match($inputScriptExp, $inputScriptHex)) {
+                                $inputScriptPubKey = $inputScript;
+                                break;
+                            }
+                        }
+
+                        if (!$inputScriptPubKey) {
+                            $inputScriptSig = $inputScript;
+                        }
+
                     }
 
                     $seqNo = VarInt::Decode(bin2hex($rawTxStream->next(4)), 4);
-                    $tx->inputs()->add($prevTxHash, $prevTxIndex, $inputScript, $seqNo);
+                    $txInput = $tx->inputs()->add($prevTxHash, $prevTxIndex, $inputScriptPubKey, $seqNo);
+                    if ($inputScriptSig) {
+                        $txInput->setScriptSig($inputScript);
+                    }
 
-                    unset($prevTxHash, $prevTxIndex, $scriptLen, $inputScript, $seqNo);
+                    unset($prevTxHash, $prevTxIndex, $scriptLen, $txInput, $inputScript, $inputScriptPubKey, $inputScriptSig, $inputScriptHex, $seqNo);
                 }
             }
 
