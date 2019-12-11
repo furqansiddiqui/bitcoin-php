@@ -22,6 +22,7 @@ use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 /**
  * Class TxOutput
  * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
+ * @property-read int $sizeInBytes
  * @property-read int $valueAsInt
  * @property-read Base16 $valueUInt64LE
  * @property-read string|null $type
@@ -44,6 +45,8 @@ class TxOutput implements TxInOutInterface
     private $address;
     /** @var null|string */
     private $scriptError;
+    /** @var int */
+    private $sizeInBytes;
 
     /**
      * TxOutput constructor.
@@ -63,6 +66,9 @@ class TxOutput implements TxInOutInterface
         $this->value = $satoshis;
         $this->scriptPubKey = $scriptPubKey;
 
+        // Output size in bytes
+        $this->sizeInBytes = $scriptPubKey->script()->binary()->size()->bytes() + 8;
+
         // Convert ScriptPubKey to address and appropriate address-type
         try {
             $address = $tx->network->address()->addressFromScript($scriptPubKey);
@@ -80,6 +86,8 @@ class TxOutput implements TxInOutInterface
     public function __get($prop)
     {
         switch ($prop) {
+            case "sizeInBytes":
+                return $this->sizeInBytes;
             case "valueAsInt":
                 return $this->value;
             case "valueUInt64LE":
