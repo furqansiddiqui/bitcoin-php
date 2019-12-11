@@ -44,7 +44,12 @@ class P2SH_Address extends AbstractPaymentAddress
 
         // Prefix verify
         if ($node) {
-            if ($this->prefix->hexits(false) !== dechex($node->const_p2sh_prefix)) {
+            $nodeP2SH_Prefix = dechex($node->const_p2sh_prefix);
+            if (strlen($nodeP2SH_Prefix) % 2 !== 0) {
+                $nodeP2SH_Prefix = "0" . $nodeP2SH_Prefix;
+            }
+
+            if ($this->prefix->hexits(false) !== $nodeP2SH_Prefix) {
                 throw new PaymentAddressException('Payment address P2SH prefix does not match');
             }
         }
@@ -79,7 +84,7 @@ class P2SH_Address extends AbstractPaymentAddress
     {
         $opCode = $this->node->opCode()->new();
         $opCode->OP_HASH160()
-            ->PUSHDATA($this->hash160->binary())
+            ->PUSHDATA($this->redeemScript->hash160()->binary())
             ->OP_EQUAL();
 
         return $opCode->script();
