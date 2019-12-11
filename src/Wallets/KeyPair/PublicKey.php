@@ -18,6 +18,8 @@ use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\BIP32\Extend\PrivateKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2PKH_Address;
+use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
+use FurqanSiddiqui\Bitcoin\Address\P2SH_P2WPKH_Address;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey\Verifier;
 use FurqanSiddiqui\ECDSA\ECC\EllipticCurveInterface;
@@ -116,6 +118,37 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
             $rawP2PKH->prepend(dechex($prefix));
         }
 
-        return new P2PKH_Address($this->node, $base58Check->encode($rawP2PKH)->value(), $this->hash160);
+        return new P2PKH_Address($this->node, $base58Check->encode($rawP2PKH)->value(), $this->hash160());
+    }
+
+    /**
+     * @return P2SH_Address
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function p2sh(): P2SH_Address
+    {
+        $redeemScript = $this->node->script()->new()
+            ->PUSHDATA($this->hash160()->clone()->binary())
+            ->OP_CHECKSIG()
+            ->script();
+
+        return $this->node->p2sh()->fromRedeemScript($redeemScript);
+    }
+
+    /**
+     * @return P2SH_P2WPKH_Address
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function p2sh_P2WPKH(): P2SH_P2WPKH_Address
+    {
+        $redeemScript = $this->node->script()->new()
+            ->OP_0()
+            ->PUSHDATA($this->hash160()->binary())
+            ->script();
+
+        $p2sh = $this->node->p2sh()->fromRedeemScript($redeemScript);
+        return new P2SH_P2WPKH_Address($this->node, $p2sh->address(), $p2sh->hash160(), $redeemScript);
     }
 }

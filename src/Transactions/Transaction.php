@@ -307,14 +307,17 @@ class Transaction
                     $scriptSig->PUSHDATA($signature->binary());
                     $input->setWitnessData($signature->copy());
 
+                    // P2PKH transaction?
+                    if($input->scriptPubKeyType === "p2pkh") {
+                        $scriptSig->PUSHDATA($signingMethod->publicKey()->compressed()->binary());
+                        $input->setWitnessData($signingMethod->publicKey()->compressed()->copy());
+                    }
+
                     // Include RedeemScript in scriptSig
                     $inputRedeemScript = $input->getRedeemScript();
                     if ($inputRedeemScript) { // P2SH
                         $scriptSig->PUSHDATA($inputRedeemScript->script()->binary());
                         $input->setWitnessData($inputRedeemScript->script()->copy());
-                    } else { // P2PKH
-                        $scriptSig->PUSHDATA($signingMethod->publicKey()->compressed()->binary());
-                        $input->setWitnessData($signingMethod->publicKey()->compressed()->copy());
                     }
 
                     $scriptSig = $scriptSig->script();

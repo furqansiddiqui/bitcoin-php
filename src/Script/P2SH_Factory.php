@@ -14,11 +14,9 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
-use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
-use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
  * Class P2SH_Factory
@@ -51,58 +49,27 @@ class P2SH_Factory
     }
 
     /**
-     * @param Script $script
+     * @param Script $redeemScript
      * @return P2SH_Address
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
-    public function fromScript(Script $script): P2SH_Address
+    public function fromRedeemScript(Script $redeemScript): P2SH_Address
     {
         $base58Check = Base58Check::getInstance();
         $prefix = $this->usePrefix ?? $this->node->const_p2sh_prefix;
 
-        $rawP2SH = $script->hash160()->clone();
-        if ($prefix && $prefix > 0) {
-            $rawP2SH->prepend(dechex($prefix));
+        $rawP2SH = $this->node->script()->new()
+            ->OP_HASH160()
+            ->PUSHDATA($redeemScript->hash160()->binary())
+            ->OP_EQUAL()
+            ->script();
+
+        $scriptPubKey = $rawP2SH->hash160()->copy();
+        if (is_int($prefix) && $prefix >= 0) {
+            $scriptPubKey->prepend($prefix);
         }
 
-        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->value(), $script->hash160(), $script);
-    }
-
-    /**
-     * @param string $hash160
-     * @return P2SH_Address
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
-     */
-    public function fromHash160(string $hash160): P2SH_Address
-    {
-        $hash160 = new Base16($hash160);
-        if ($hash160->binary()->size()->bits() !== 160) {
-            throw new \LengthException('Hash160 for P2SH constructor must be a valid 160-bit hexadecimal string');
-        }
-
-        $base58Check = Base58Check::getInstance();
-        $prefix = $this->usePrefix ?? $this->node->const_p2sh_prefix;
-
-        $rawP2SH = $hash160->clone();
-        if ($prefix && $prefix > 0) {
-            $rawP2SH->prepend(dechex($prefix));
-        }
-
-        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->value(), $hash160);
-    }
-
-    public function fromPublicKey(PublicKey $publicKey): P2SH_Address
-    {
-
-    }
-
-    public function multiSig1of1(PublicKey $publicKey): P2SH_Address
-    {
-
-    }
-
-    public function multiSig(int $total, int $req, PublicKey ...$publicKeys): P2SH_Address
-    {
-
+        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->value(), $rawP2SH->hash160(), $redeemScript);
     }
 }
