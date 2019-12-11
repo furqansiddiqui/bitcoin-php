@@ -140,7 +140,7 @@ class TxOutput implements TxInOutInterface
                 "dec" => $this->valueAsInt,
                 "uInt64LE" => $this->valueUInt64LE->hexits(false)
             ],
-            "script" => [
+            "scriptPubKey" => [
                 "script" => $this->scriptPubKey->raw(),
                 "base16" => $this->scriptPubKey->script()->hexits(false),
                 "type" => $this->type,
