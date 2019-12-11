@@ -251,8 +251,8 @@ class TxInput implements TxInOutInterface
                 "dec" => $this->index,
                 "uInt32LE" => $this->indexUInt32LE->hexits(false)
             ],
-            "script" => null,
             "scriptPubKey" => null,
+            "scriptSig" => null,
             "seqNo" => [
                 "dec" => $this->seqNo,
                 "uInt32LE" => $this->seqUInt32LE->hexits(false)
