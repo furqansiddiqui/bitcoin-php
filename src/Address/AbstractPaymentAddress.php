@@ -26,6 +26,8 @@ use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
  */
 abstract class AbstractPaymentAddress implements PaymentAddressInterface
 {
+    protected const TYPE = null;
+
     /** @var AbstractBitcoinNode|null */
     protected $node;
     /** @var string */
@@ -89,6 +91,14 @@ abstract class AbstractPaymentAddress implements PaymentAddressInterface
     public function prefix(): ?Base16
     {
         return $this->prefix;
+    }
+
+    /**
+     * @return string
+     */
+    public function type(): ?string
+    {
+        return static::TYPE;
     }
 
     /**

@@ -25,6 +25,8 @@ use FurqanSiddiqui\Bitcoin\Script\Script;
  */
 class P2SH_Address extends AbstractPaymentAddress
 {
+    protected const TYPE = "p2sh";
+
     /** @var Script|null */
     private $redeemScript;
 

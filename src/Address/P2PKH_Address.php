@@ -25,6 +25,8 @@ use FurqanSiddiqui\Bitcoin\Script\Script;
  */
 class P2PKH_Address extends AbstractPaymentAddress
 {
+    protected const TYPE = "p2pkh";
+
     /**
      * P2PKH_Address constructor.
      * @param AbstractBitcoinNode|null $node
