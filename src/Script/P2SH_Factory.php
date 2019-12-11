@@ -67,7 +67,7 @@ class P2SH_Factory
 
         $scriptPubKey = $rawP2SH->hash160()->copy();
         if (is_int($prefix) && $prefix >= 0) {
-            $scriptPubKey->prepend($prefix);
+            $scriptPubKey->prepend(dechex($prefix));
         }
 
         return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->value(), $rawP2SH->hash160(), $redeemScript);
