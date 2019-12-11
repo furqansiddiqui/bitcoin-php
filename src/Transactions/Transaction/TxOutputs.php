@@ -29,7 +29,7 @@ class TxOutputs extends AbstractTxInOut
      */
     public function add(Script $scriptPubKey, int $value): self
     {
-        $output = new TxOutput($value, $scriptPubKey);
+        $output = new TxOutput($this->tx, $this->count, $value, $scriptPubKey);
         $this->append($output);
         return $this;
     }
