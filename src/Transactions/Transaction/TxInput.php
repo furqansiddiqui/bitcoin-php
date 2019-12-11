@@ -23,7 +23,6 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 /**
  * Class TxInput
  * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
- * @property-read int $sizeInBytes
  * @property-read Base16 $indexUInt32LE
  * @property-read Base16 $seqUInt32LE
  * @property-read string|null $scriptPubKeyType
@@ -60,9 +59,6 @@ class TxInput implements TxInOutInterface
     /** @var null|string */
     private $scriptPubKeyError;
 
-    /** @var int */
-    private $sizeInBytes;
-
     /**
      * TxInput constructor.
      * @param Transaction $tx
@@ -88,7 +84,6 @@ class TxInput implements TxInOutInterface
         $this->tx = $tx;
         $this->prevTxHash = $prevTxHash;
         $this->prevTxHash->readOnly(true);
-        $this->sizeInBytes = 40; // 32 byte hash + 4 byte index + 4 byte sequence no.
         $this->index = $index;
         $this->scriptPubKey = $scriptPubKey;
         $this->seqNo = $seqNo ?? self::DEFAULT_SEQUENCE;
@@ -113,8 +108,6 @@ class TxInput implements TxInOutInterface
     public function __get($prop)
     {
         switch ($prop) {
-            case "sizeInBytes":
-                return $this->sizeInBytes;
             case "indexUInt32LE":
                 $uInt32LE = bin2hex(pack("V", $this->index));
                 return new Base16($uInt32LE);
@@ -161,7 +154,6 @@ class TxInput implements TxInOutInterface
     public function setScriptSig(Script $scriptSig): self
     {
         $this->scriptSig = $scriptSig;
-        $this->sizeInBytes += $scriptSig->script()->binary()->size()->bytes();
         return $this;
     }
 
@@ -225,6 +217,25 @@ class TxInput implements TxInOutInterface
     public function seqNo(): int
     {
         return $this->seqNo;
+    }
+
+    /**
+     * @return int
+     */
+    public function sizeInBytes(): int
+    {
+        $inputSize = 41; // 32 byte hash, 4 byte index and 4 byte seq. num and 1 byte scriptSig length
+        if ($this->tx->isSegWit) {
+            /** @var Base16 $witness */
+            foreach ($this->segWitData as $witness) {
+                $inputSize++; // Stack elements count
+                $inputSize += $witness->binary()->sizeInBytes;
+            }
+        } elseif ($this->scriptSig) {
+            $inputSize += $this->scriptSig->script()->binary()->sizeInBytes;
+        }
+
+        return $inputSize;
     }
 
     /**

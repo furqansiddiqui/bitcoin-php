@@ -32,8 +32,7 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
  * @property-read Base16 $verUInt32LE
  * @property-read Base16 $lockTimeUInt32LE
  * @property-read AbstractBitcoinNode $network
- * @property-read int $size
- * @property-read int $weight
+ * @property-read bool $isSegWit
  */
 class Transaction
 {
@@ -79,7 +78,7 @@ class Transaction
 
     /**
      * @param $prop
-     * @return Base16|AbstractBitcoinNode
+     * @return mixed
      */
     public function __get($prop)
     {
@@ -91,7 +90,8 @@ class Transaction
                 $uInt32LE = bin2hex(pack("V", $this->lockTime));
                 return new Base16($uInt32LE);
             case "network":
-                return $this->network;
+            case "isSegWit":
+                return $this->$prop;
         }
 
         throw new \OutOfBoundsException('Cannot get value of inaccessible property');
@@ -216,6 +216,32 @@ class Transaction
     public function sign(): SerializedTransaction
     {
         return $this->_encode(true);
+    }
+
+    /**
+     * @return TransactionSize
+     */
+    public function size(): TransactionSize
+    {
+        $totalSize = 10; // 4 byte version, 2x 1 byte input and output counts, 4 byte lockTime
+        /** @var TxInput $input */
+        foreach ($this->inputs->all() as $input) {
+            $totalSize += $input->sizeInBytes();
+        }
+
+        /** @var TxOutput $output */
+        foreach ($this->outputs->all() as $output) {
+            $totalSize += $output->sizeInBytes();
+        }
+
+        if ($this->isSegWit) {
+            $totalSize += 2; // 2 byte SegWit flag
+        }
+
+        $txSize = new TransactionSize();
+        $txSize->size = $totalSize;
+        $txSize->weight = $this->isSegWit ? $totalSize : $totalSize * 4;
+        return $txSize;
     }
 
     /**
