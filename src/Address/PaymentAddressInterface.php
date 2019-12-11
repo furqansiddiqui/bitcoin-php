@@ -25,7 +25,7 @@ interface PaymentAddressInterface
     /**
      * @return string
      */
-    public function type(): string;
+    public function type(): ?string;
 
     /**
      * @return string
