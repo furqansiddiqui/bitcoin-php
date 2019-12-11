@@ -129,7 +129,7 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     public function p2sh(): P2SH_Address
     {
         $redeemScript = $this->node->script()->new()
-            ->PUSHDATA($this->hash160()->clone()->binary())
+            ->PUSHDATA($this->compressed()->binary())
             ->OP_CHECKSIG()
             ->script();
 
