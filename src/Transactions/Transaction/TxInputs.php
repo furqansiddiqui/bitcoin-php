@@ -31,7 +31,7 @@ class TxInputs extends AbstractTxInOut
      */
     public function add($prevTxHash, int $index, ?Script $scriptPubKey, ?int $seqNo = null): TxInput
     {
-        $input = new TxInput($prevTxHash, $index, $scriptPubKey, $seqNo);
+        $input = new TxInput($this->tx, $prevTxHash, $index, $scriptPubKey, $seqNo);
         $this->append($input);
         return $input;
     }
