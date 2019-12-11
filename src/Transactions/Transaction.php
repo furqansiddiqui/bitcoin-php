@@ -195,6 +195,30 @@ class Transaction
     }
 
     /**
+     * @return SerializedTransaction
+     * @throws TransactionEncodeException
+     * @throws TransactionInputSignException
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function serialize(): SerializedTransaction
+    {
+        return $this->_encode(false);
+    }
+
+    /**
+     * @return SerializedTransaction
+     * @throws TransactionEncodeException
+     * @throws TransactionInputSignException
+     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function sign(): SerializedTransaction
+    {
+        return $this->_encode(true);
+    }
+
+    /**
      * @param bool $includeSignatures
      * @param int|null $inputScriptPubKey
      * @return SerializedTransaction
@@ -203,7 +227,7 @@ class Transaction
      * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
-    public function serialize(bool $includeSignatures, ?int $inputScriptPubKey = null): SerializedTransaction
+    private function _encode(bool $includeSignatures, ?int $inputScriptPubKey = null): SerializedTransaction
     {
         $serialized = new Base16();
 
@@ -244,7 +268,7 @@ class Transaction
                     $scriptSig = $signingMethod;
                 } elseif ($signingMethod instanceof PrivateKey) {
                     // Sign with private key
-                    $signature = $signingMethod->sign()->transaction($this->serialize(false, $inputIndex));
+                    $signature = $signingMethod->sign()->transaction($this->_encode(false, $inputIndex));
                     $signature = $signature->copy();
                     $signature->append("01"); // One-byte hash code type
 
@@ -253,6 +277,13 @@ class Transaction
                     $input->setWitnessData($signature->copy());
                     $scriptSig->PUSHDATA($signingMethod->publicKey()->compressed()->binary());
                     $input->setWitnessData($signingMethod->publicKey()->compressed()->copy());
+
+                    // Include RedeemScript in scriptSig
+                    $inputRedeemScript = $input->getRedeemScript();
+                    if ($inputRedeemScript) {
+                        $scriptSig->PUSHDATA($inputRedeemScript->script()->binary());
+                        $input->setWitnessData($inputRedeemScript->script()->copy());
+                    }
 
                     $scriptSig = $scriptSig->script();
                     $input->setScriptSig($scriptSig);
@@ -325,7 +356,7 @@ class Transaction
             /** @var TxInput $input */
             foreach ($this->inputs->all() as $input) {
                 $segWitInputNo++;
-                $inWitness = $input->segWitData();
+                $inWitness = $input->getSegWitData();
                 if (!$inWitness) {
                     throw new TransactionEncodeException(sprintf('Missing SegWit data for input # %d', $segWitInputNo));
                 }
