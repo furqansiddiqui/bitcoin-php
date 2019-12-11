@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Address;
 
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
+use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
 
 /**
@@ -86,5 +87,37 @@ class AddressFactory
         }
 
         throw new PaymentAddressException('Could not identify given address as P2PKH/P2SH');
+    }
+
+    /**
+     * @param Script $scriptPubKey
+     * @return PaymentAddressInterface
+     * @throws PaymentAddressException
+     */
+    public function fromScript(Script $scriptPubKey): PaymentAddressInterface
+    {
+        return $this->addressFromScript($scriptPubKey);
+    }
+
+    /**
+     * @param Script $scriptPubKey
+     * @return PaymentAddressInterface
+     * @throws PaymentAddressException
+     */
+    public function addressFromScript(Script $scriptPubKey): PaymentAddressInterface
+    {
+        $base58Check = Base58Check::getInstance();
+        $scriptHex = $scriptPubKey->script()->hexits(false);
+        if (preg_match('/^76a914[a-f0-9]{20}88ac$/i', $scriptHex)) {
+            $prefix = $this->node->const_p2pkh_prefix;
+            $hash160 = substr($scriptHex, 6, 40);
+            return $this->p2pkh($base58Check->encode($prefix . $hash160)->value());
+        } elseif (preg_match('/^a914[a-f0-9]{20}87$/i', $scriptHex)) {
+            $prefix = $this->node->const_p2sh_prefix;
+            $hash160 = substr($scriptHex, 4, 20);
+            return $this->p2sh($base58Check->encode($prefix . $hash160)->value());
+        }
+
+        throw new PaymentAddressException('Could not identify given ScriptPubKey as P2PKH/P2SH');
     }
 }
