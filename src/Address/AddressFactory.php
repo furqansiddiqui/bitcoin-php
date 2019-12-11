@@ -114,7 +114,7 @@ class AddressFactory
             $hash160->prepend(dechex($this->node->const_p2pkh_prefix));
             return $this->p2pkh($base58Check->encode($hash160)->value());
         } elseif (preg_match('/^a914[a-f0-9]{40}87$/i', $scriptHex)) {
-            $hash160 = new Base16(substr($scriptHex, 6, 40));
+            $hash160 = new Base16(substr($scriptHex, 4, 40));
             $hash160->prepend(dechex($this->node->const_p2sh_prefix));
             return $this->p2sh($base58Check->encode($hash160)->value());
         }
