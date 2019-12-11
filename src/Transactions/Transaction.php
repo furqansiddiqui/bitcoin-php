@@ -110,10 +110,15 @@ class Transaction
      */
     public function dump(): array
     {
+        $txSize = $this->size();
         return [
             "version" => [
                 "dec" => $this->version,
                 "uInt32LE" => $this->verUInt32LE->hexits(false),
+            ],
+            "size" => [
+                "bytes" => $txSize->size,
+                "weight" => $txSize->weight
             ],
             "isSegWit" => $this->isSegWit,
             "inputs" => $this->inputs()->dump(),
