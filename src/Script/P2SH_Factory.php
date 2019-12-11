@@ -70,6 +70,6 @@ class P2SH_Factory
             $scriptPubKey->prepend(dechex($prefix));
         }
 
-        return new P2SH_Address($this->node, $base58Check->encode($rawP2SH)->value(), $rawP2SH->hash160(), $redeemScript);
+        return new P2SH_Address($this->node, $base58Check->encode($scriptPubKey)->value(), $rawP2SH->hash160(), $redeemScript);
     }
 }
