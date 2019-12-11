@@ -44,7 +44,7 @@ class P2SH_Address extends AbstractPaymentAddress
 
         // Prefix verify
         if ($node) {
-            if ($this->prefix->hexits(false) === dechex($node->const_p2sh_prefix)) {
+            if ($this->prefix->hexits(false) !== dechex($node->const_p2sh_prefix)) {
                 throw new PaymentAddressException('Payment address P2SH prefix does not match');
             }
         }
@@ -54,9 +54,19 @@ class P2SH_Address extends AbstractPaymentAddress
     }
 
     /**
+     * @param Script $redeemScript
+     * @return $this
+     */
+    public function setRedeemScript(Script $redeemScript): self
+    {
+        $this->redeemScript = $redeemScript;
+        return $this;
+    }
+
+    /**
      * @return Script|null
      */
-    public function redeemScript(): ?Script
+    public function getRedeemScript(): ?Script
     {
         return $this->redeemScript;
     }
