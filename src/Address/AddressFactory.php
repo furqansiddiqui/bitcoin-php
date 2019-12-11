@@ -108,13 +108,13 @@ class AddressFactory
     {
         $base58Check = Base58Check::getInstance();
         $scriptHex = $scriptPubKey->script()->hexits(false);
-        if (preg_match('/^76a914[a-f0-9]{20}88ac$/i', $scriptHex)) {
+        if (preg_match('/^76a914[a-f0-9]{40}88ac$/i', $scriptHex)) {
             $prefix = $this->node->const_p2pkh_prefix;
             $hash160 = substr($scriptHex, 6, 40);
             return $this->p2pkh($base58Check->encode($prefix . $hash160)->value());
-        } elseif (preg_match('/^a914[a-f0-9]{20}87$/i', $scriptHex)) {
+        } elseif (preg_match('/^a914[a-f0-9]{40}87$/i', $scriptHex)) {
             $prefix = $this->node->const_p2sh_prefix;
-            $hash160 = substr($scriptHex, 4, 20);
+            $hash160 = substr($scriptHex, 4, 40);
             return $this->p2sh($base58Check->encode($prefix . $hash160)->value());
         }
 
