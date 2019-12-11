@@ -297,7 +297,7 @@ class TxInput implements TxInOutInterface
         }
 
         // Witness Data?
-        if ($this->segWitData) {
+        if ($this->tx->isSegWit && $this->segWitData) {
             $inputData["witness"] = [];
             /** @var Base16 $witness */
             foreach ($this->segWitData as $witness) {
