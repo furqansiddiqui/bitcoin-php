@@ -130,11 +130,34 @@ class OpCode
     public function PUSHDATA(Binary $data): self
     {
         $dataLen = $data->size()->bytes();
-        if ($dataLen < 1 || $dataLen > 75) {
+        if ($dataLen < 1) {
             throw new \LengthException('PUSHDATA method can only be used for data between 1 and 75 bytes');
         }
 
-        $this->script[] = sprintf('PUSHDATA(%d)[%s]', $dataLen, $data->base16()->hexits(false));
+        // Simple PUSHDATA (length 1 to 75 bytes)
+        if ($dataLen <= 75) {
+            $this->script[] = sprintf('PUSHDATA(%d)[%s]', $dataLen, $data->base16()->hexits(false));
+            return $this;
+        }
+
+        if ($dataLen <= 0xff) { // 255
+            $pushDataPrefix = 1;
+            $pushDataLenHex = dechex($dataLen);
+        } elseif ($dataLen <= 0xffff) { // 65535
+            $pushDataPrefix = 2;
+            $pushDataLenHex = bin2hex(pack("v", $dataLen));
+        } elseif ($dataLen <= 0xffffffff) { // 4294967295
+            $pushDataPrefix = 4;
+            $pushDataLenHex = bin2hex(pack("V", $dataLen));
+        } else {
+            throw new \LengthException('PUSHDATA cannot push data exceeding 4-byte length');
+        }
+
+        if (strlen($pushDataLenHex) % 2 !== 0) {
+            $pushDataLenHex = "0" . $pushDataLenHex;
+        }
+
+        $this->script[] = sprintf('PUSHDATA%d[%s%s]', $pushDataPrefix, $pushDataLenHex, $data->base16()->hexits(false));
         return $this;
     }
 
