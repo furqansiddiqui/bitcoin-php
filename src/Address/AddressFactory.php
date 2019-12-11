@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Address;
 
+use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
@@ -109,13 +110,13 @@ class AddressFactory
         $base58Check = Base58Check::getInstance();
         $scriptHex = $scriptPubKey->script()->hexits(false);
         if (preg_match('/^76a914[a-f0-9]{40}88ac$/i', $scriptHex)) {
-            $prefix = $this->node->const_p2pkh_prefix;
-            $hash160 = substr($scriptHex, 6, 40);
-            return $this->p2pkh($base58Check->encode($prefix . $hash160)->value());
+            $hash160 = new Base16(substr($scriptHex, 6, 40));
+            $hash160->prepend(dechex($this->node->const_p2pkh_prefix));
+            return $this->p2pkh($base58Check->encode($hash160)->value());
         } elseif (preg_match('/^a914[a-f0-9]{40}87$/i', $scriptHex)) {
-            $prefix = $this->node->const_p2sh_prefix;
-            $hash160 = substr($scriptHex, 4, 40);
-            return $this->p2sh($base58Check->encode($prefix . $hash160)->value());
+            $hash160 = new Base16(substr($scriptHex, 6, 40));
+            $hash160->prepend(dechex($this->node->const_p2sh_prefix));
+            return $this->p2sh($base58Check->encode($hash160)->value());
         }
 
         throw new PaymentAddressException('Could not identify given ScriptPubKey as P2PKH/P2SH');
