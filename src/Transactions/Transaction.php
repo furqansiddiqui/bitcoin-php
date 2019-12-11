@@ -31,6 +31,7 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
  * @package FurqanSiddiqui\Bitcoin\Transactions
  * @property-read Base16 $verUInt32LE
  * @property-read Base16 $lockTimeUInt32LE
+ * @property-read AbstractBitcoinNode $network
  * @property-read int $size
  * @property-read int $weight
  */
@@ -39,7 +40,7 @@ class Transaction
     public const VALID_VERSIONS = [1, 2];
 
     /** @var AbstractBitcoinNode */
-    private $node;
+    private $network;
     /** @var int */
     private $version;
     /** @var TxInputs */
@@ -64,11 +65,11 @@ class Transaction
 
     /**
      * Transaction constructor.
-     * @param AbstractBitcoinNode $node
+     * @param AbstractBitcoinNode $network
      */
-    public function __construct(AbstractBitcoinNode $node)
+    public function __construct(AbstractBitcoinNode $network)
     {
-        $this->node = $node;
+        $this->network = $network;
         $this->version = 1;
         $this->inputs = new TxInputs($this);
         $this->outputs = new TxOutputs($this);
@@ -78,7 +79,7 @@ class Transaction
 
     /**
      * @param $prop
-     * @return Base16
+     * @return Base16|AbstractBitcoinNode
      */
     public function __get($prop)
     {
@@ -89,6 +90,8 @@ class Transaction
             case "lockTimeUInt32LE":
                 $uInt32LE = bin2hex(pack("V", $this->lockTime));
                 return new Base16($uInt32LE);
+            case "network":
+                return $this->network;
         }
 
         throw new \OutOfBoundsException('Cannot get value of inaccessible property');
@@ -245,7 +248,7 @@ class Transaction
                     $signature = $signature->copy();
                     $signature->append("01"); // One-byte hash code type
 
-                    $scriptSig = $this->node->script()->new();
+                    $scriptSig = $this->network->script()->new();
                     $scriptSig->PUSHDATA($signature->binary());
                     $input->setWitnessData($signature->copy());
                     $scriptSig->PUSHDATA($signingMethod->publicKey()->compressed()->binary());
