@@ -104,6 +104,7 @@ class TxOutput implements TxInOutInterface
     }
 
     /**
+     * Get amount to transfer in satoshis
      * @return int
      */
     public function value(): int
@@ -112,6 +113,7 @@ class TxOutput implements TxInOutInterface
     }
 
     /**
+     * Get scriptPubKey
      * @return Script
      */
     public function scriptPubKey(): Script
@@ -120,6 +122,7 @@ class TxOutput implements TxInOutInterface
     }
 
     /**
+     * Get dump of TxOutput as an array
      * @return array
      */
     public function dump(): array
