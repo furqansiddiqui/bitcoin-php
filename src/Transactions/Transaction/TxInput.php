@@ -172,7 +172,7 @@ class TxInput implements TxInOutInterface
         $this->redeemScript = $redeemScript;
 
         // Is P2SH-P2WPKH script?
-        if (preg_match('/^0014[a-f0-9]{40}$/i', $redeemScript->script())) {
+        if (preg_match('/^0014[a-f0-9]{40}$/i', $redeemScript->script()->hexits())) {
             $this->redeemScriptType = "p2sh-p2wpkh";
         }
 
