@@ -232,7 +232,7 @@ class TxInput implements TxInOutInterface
      */
     public function createScriptSig(Base16 $signature, PublicKey $publicKey): Script
     {
-        $signature->copy()->append("01"); // One-byte hash code type
+        $signature = $signature->copy()->append("01"); // One-byte hash code type
         $scriptSig = $this->tx->network->script()->new();
 
         if (preg_match('/^p2sh/', $this->scriptPubKeyType)) { // P2SH
