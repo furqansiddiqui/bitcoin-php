@@ -31,6 +31,8 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
  * @property-read string|null $scriptPubKeyAddr
  * @property-read string|null $scriptPubKeyError
  * @property-read string|null $redeemScriptType
+ * @property-read int|null $value
+ * @property-read string|null $valueUInt64LE
  */
 class TxInput implements TxInOutInterface
 {
@@ -42,6 +44,8 @@ class TxInput implements TxInOutInterface
     private $prevTxHash;
     /** @var int */
     private $index;
+    /** @var null|int */
+    private $value;
     /** @var Script */
     private $scriptPubKey;
     /** @var int|null */
@@ -71,8 +75,9 @@ class TxInput implements TxInOutInterface
      * @param int $index
      * @param Script|null $scriptPubKey (Optional, MUST provider if constructing new transaction; will not have if decoded an old transaction)
      * @param int|null $seqNo
+     * @param int|null $value
      */
-    public function __construct(Transaction $tx, $prevTxHash, int $index, ?Script $scriptPubKey, ?int $seqNo = null)
+    public function __construct(Transaction $tx, $prevTxHash, int $index, ?Script $scriptPubKey, ?int $seqNo = null, ?int $value = null)
     {
         if (!$prevTxHash instanceof Base16) {
             if (!is_string($prevTxHash)) {
@@ -90,6 +95,7 @@ class TxInput implements TxInOutInterface
         $this->prevTxHash = $prevTxHash;
         $this->prevTxHash->readOnly(true);
         $this->index = $index;
+        $this->value = $value;
         $this->scriptPubKey = $scriptPubKey;
         $this->seqNo = $seqNo ?? self::DEFAULT_SEQUENCE;
         $this->segWitData = [];
@@ -119,6 +125,15 @@ class TxInput implements TxInOutInterface
             case "seqUInt32LE":
                 $uInt32LE = bin2hex(pack("V", $this->seqNo));
                 return new Base16($uInt32LE);
+            case "value":
+                return $this->value;
+            case "valueUInt64LE":
+                if (!is_int($this->value)) {
+                    return null;
+                }
+
+                $uInt64LE = bin2hex(pack("P", $this->value));
+                return new Base16($uInt64LE);
             case "scriptPubKeyError":
             case "redeemScriptType":
             case "scriptPubKeyType":

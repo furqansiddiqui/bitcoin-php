@@ -233,6 +233,10 @@ class Transaction
     public function hashPreImage(int $inputIndex): SerializedTransaction
     {
         $preImage = new Base16();
+        $hashPrevOuts = new Base16();
+        $hashSequences = new Base16();
+        $hashOutputs = new Base16();
+        $signingInput = null;
 
         // Add 4 byte version
         $preImage->append($this->verUInt32LE);
@@ -243,6 +247,10 @@ class Transaction
         /** @var TxInput $input */
         foreach ($this->inputs->all() as $input) {
             $inputNum++;
+            if (!$signingInput && $inputNum === $inputIndex) {
+                $signingInput = $input;
+            }
+
             // Reverse byte order
             $prevTxHashRev = implode("", array_reverse(str_split($input->prevTxHash()->hexits(false), 2)));
             $preImage->append($prevTxHashRev);
@@ -259,12 +267,27 @@ class Transaction
             }
             // 4-byte Sequence Number
             $preImage->append($input->seqUInt32LE);
+
+            // Append hashPrevOuts and hashSequences
+            $hashPrevOuts->append($prevTxHashRev);
+            $hashPrevOuts->append($input->indexUInt32LE);
+            $hashSequences->append($input->seqUInt32LE);
+
             // Input done!
             unset($input, $inputScriptCode);
         }
 
         // Append Outputs
-        $this->serializeBufferAppendOutputs($preImage);
+        $this->serializeBufferAppendOutputs($preImage, $hashOutputs);
+
+        // Check if Input in SegWit P2SH-P2WPKH
+        if ($signingInput) {
+            if ($signingInput->redeemScriptType === "p2sh-p2wpkh") {
+                // Swap buffer with SegWit format hashPreImage buffer
+                $preImage = $this->hashPreImageSegWit($signingInput, $hashPrevOuts, $hashSequences, $hashOutputs);
+            }
+        }
+
         // Finally, Tx lock time! 4 byte
         $preImage->append($this->lockTimeUInt32LE);
         // 4-byte Hash code type
@@ -276,6 +299,80 @@ class Transaction
             ->hash()->sha256(); // SHA256 twice
 
         return new SerializedTransaction($preImage, $hash->base16(), false);
+    }
+
+    /**
+     * @param TxInput $input
+     * @param Base16 $prevOuts
+     * @param Base16 $prevSeq
+     * @param Base16 $outputs
+     * @return Base16
+     * @throws TransactionInputSignException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function hashPreImageSegWit(TxInput $input, Base16 $prevOuts, Base16 $prevSeq, Base16 $outputs): Base16
+    {
+        $segWitInput = new Base16();
+        $inputHashShort = sprintf("%s-%d", substr($input->prevTxHash()->hexits(), 0, 8), $input->index());
+
+        // Convert all argument buffers into hashes
+        $prevOutsHash = $prevOuts->binary()->hash()->sha256()
+            ->hash()->sha256()
+            ->base16();
+        $prevSeqHash = $prevSeq->binary()->hash()->sha256()
+            ->hash()->sha256()
+            ->base16();
+        $outputsHash = $outputs->binary()->hash()->sha256()
+            ->hash()->sha256()
+            ->base16();
+
+        // Add 4 byte version
+        $segWitInput->append($this->verUInt32LE);
+        // Append hashPrevOuts
+        $segWitInput->append($prevOutsHash);
+        // Append hashSequence
+        $segWitInput->append($prevSeqHash);
+        // Outpoint
+        $segWitInput->append(implode("", array_reverse(str_split($input->prevTxHash()->hexits(false), 2))));
+        $segWitInput->append($input->indexUInt32LE);
+        // ScriptCode
+        $scriptCode = null;
+        if ($input->redeemScriptType === "p2sh-p2wpkh") {
+            // P2SH-P2WPKH
+            $redeemScriptHash = substr($input->getRedeemScript()->script()->hexits(false), 4, 40);
+            $scriptCode = $this->network->script()->new()
+                ->OP_DUP()
+                ->OP_HASH160()
+                ->PUSHDATA((new Base16($redeemScriptHash))->binary())
+                ->OP_EQUALVERIFY()
+                ->OP_CHECKSIG()
+                ->script();
+        }
+
+        if (!$scriptCode) {
+            throw new TransactionInputSignException(
+                sprintf('Cannot create SegWith hashPreImage for input "%s"', $inputHashShort)
+            );
+        }
+
+        $scriptCode = $scriptCode->script();
+        $segWitInput->append(VarInt::Encode($scriptCode->binary()->sizeInBytes));
+        $segWitInput->append($scriptCode);
+
+        // Value/Amount
+        if (!is_int($input->value)) {
+            throw new TransactionInputSignException(
+                sprintf('SegWith hashPreImage for requires amount/value for input "%s"', $inputHashShort)
+            );
+        }
+
+        $segWitInput->append($input->valueUInt64LE);
+        // Sequence
+        $segWitInput->append($input->seqUInt32LE);
+        // Append HashOutputs
+        $segWitInput->append($outputsHash);
+
+        return $segWitInput;
     }
 
     /**
@@ -383,8 +480,9 @@ class Transaction
 
     /**
      * @param Base16 $buffer
+     * @param Base16|null $hashOutputsBuffer
      */
-    private function serializeBufferAppendOutputs(Base16 $buffer): void
+    private function serializeBufferAppendOutputs(Base16 $buffer, ?Base16 $hashOutputsBuffer = null): void
     {
         // Append number of outputs
         $buffer->append(VarInt::Encode($this->outputs->count()));
@@ -397,8 +495,15 @@ class Transaction
             $buffer->append($output->valueUInt64LE);
             // Output ScriptPubKey
             $outputPubKey = $output->scriptPubKey()->script();
-            $buffer->append(VarInt::Encode($outputPubKey->binary()->sizeInBytes));
+            $outputPubKeyLen = VarInt::Encode($outputPubKey->binary()->sizeInBytes);
+            $buffer->append($outputPubKeyLen);
             $buffer->append($outputPubKey);
+            // hashOutputs buffer?
+            if ($hashOutputsBuffer) {
+                $hashOutputsBuffer->append($output->valueUInt64LE);
+                $hashOutputsBuffer->append($outputPubKeyLen);
+                $hashOutputsBuffer->append($outputPubKey);
+            }
             unset($output, $outputPubKey);
         }
     }
