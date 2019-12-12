@@ -239,7 +239,7 @@ class Script
      */
     public function p2sh(): P2SH_Address
     {
-        return $this->node->p2sh()->fromScript($this);
+        return $this->node->p2sh()->fromRedeemScript($this);
     }
 
     /**
