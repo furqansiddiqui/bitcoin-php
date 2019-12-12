@@ -84,7 +84,7 @@ class P2SH_Address extends AbstractPaymentAddress
     {
         $opCode = $this->node->opCode()->new();
         $opCode->OP_HASH160()
-            ->PUSHDATA($this->redeemScript->hash160()->binary())
+            ->PUSHDATA($this->hash160()->binary())
             ->OP_EQUAL();
 
         return $opCode->script();

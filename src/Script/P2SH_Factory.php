@@ -52,24 +52,16 @@ class P2SH_Factory
      * @param Script $redeemScript
      * @return P2SH_Address
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
     public function fromRedeemScript(Script $redeemScript): P2SH_Address
     {
         $base58Check = Base58Check::getInstance();
         $prefix = $this->usePrefix ?? $this->node->const_p2sh_prefix;
-
-        $rawP2SH = $this->node->script()->new()
-            ->OP_HASH160()
-            ->PUSHDATA($redeemScript->hash160()->binary())
-            ->OP_EQUAL()
-            ->script();
-
-        $scriptPubKey = $rawP2SH->hash160()->copy();
+        $hash160 = $redeemScript->hash160()->copy();
         if (is_int($prefix) && $prefix >= 0) {
-            $scriptPubKey->prepend(dechex($prefix));
+            $hash160->prepend(dechex($prefix));
         }
 
-        return new P2SH_Address($this->node, $base58Check->encode($scriptPubKey)->value(), $rawP2SH->hash160(), $redeemScript);
+        return new P2SH_Address($this->node, $base58Check->encode($hash160)->value(), $redeemScript->hash160()->copy(), $redeemScript);
     }
 }
