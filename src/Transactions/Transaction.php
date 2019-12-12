@@ -310,7 +310,7 @@ class Transaction
      * @throws TransactionInputSignException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
-    public function hashPreImageSegWit(TxInput $input, Base16 $prevOuts, Base16 $prevSeq, Base16 $outputs): Base16
+    private function hashPreImageSegWit(TxInput $input, Base16 $prevOuts, Base16 $prevSeq, Base16 $outputs): Base16
     {
         $segWitInput = new Base16();
         $inputHashShort = sprintf("%s-%d", substr($input->prevTxHash()->hexits(), 0, 8), $input->index());
