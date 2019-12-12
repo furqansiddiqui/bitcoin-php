@@ -300,32 +300,7 @@ class Transaction
                 } elseif ($signingMethod instanceof PrivateKey) {
                     // Sign with private key
                     $signature = $signingMethod->sign()->transaction($this->_encode(false, $inputIndex));
-                    $signature = $signature->copy();
-                    $signature->append("01"); // One-byte hash code type
-
-                    $scriptSig = $this->network->script()->new();
-                    $scriptSig->PUSHDATA($signature->binary());
-                    $input->setWitnessData($signature->copy());
-
-                    // P2PKH transaction?
-                    if ($input->scriptPubKeyType === "p2pkh") {
-                        $scriptSig->PUSHDATA($signingMethod->publicKey()->compressed()->binary());
-                        $input->setWitnessData($signingMethod->publicKey()->compressed()->copy());
-                    }
-
-                    // Include RedeemScript in scriptSig
-                    $inputRedeemScript = $input->getRedeemScript();
-                    if ($inputRedeemScript) { // P2SH
-                        $scriptSig->PUSHDATA($inputRedeemScript->script()->binary());
-                        $input->setWitnessData($inputRedeemScript->script()->copy());
-                    }
-
-                    $scriptSig = $scriptSig->script();
-                    $input->setScriptSig($scriptSig);
-
-                    if ($this->isSegWit) {
-                        $scriptSig = null; // Set as NULL for SegWit transaction
-                    }
+                    $scriptSig = $input->createScriptSig($signature, $signingMethod->publicKey());
                 } else {
                     throw new TransactionInputSignException(
                         sprintf('No signature available for input # %d (index: %d)', $inputIndex + 1, $inputIndex),
@@ -333,23 +308,9 @@ class Transaction
                     );
                 }
             } else {
-                // Use scriptPubKey in place of scriptSig
-                $scriptSig = null;
-                if (is_int($inputScriptPubKey) && $inputScriptPubKey === $inputIndex) {
-                    $inputRedeemScript = $input->getRedeemScript();
-                    if ($input->scriptPubKeyType === "p2sh") {
-                        if (!$inputRedeemScript) {
-                            throw new TransactionInputSignException(
-                                sprintf('Cannot sign P2SH input # %d without a redeemScript', $inputIndex),
-                                $inputIndex
-                            );
-                        }
-
-                        $scriptSig = $inputRedeemScript;
-                    } elseif ($input->scriptPubKeyType === "p2pkh") {
-                        $scriptSig = $input->scriptPubKey();
-                    }
-                }
+                // Get scriptCode to sign
+                $scriptSig = (is_int($inputScriptPubKey) && $inputScriptPubKey === $inputIndex) ?
+                    $input->getScriptCode() : null;
             }
 
             if ($scriptSig instanceof Script) {

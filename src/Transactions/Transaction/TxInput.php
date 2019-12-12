@@ -16,9 +16,11 @@ namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 
 use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
+use FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
  * Class TxInput
@@ -28,6 +30,7 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
  * @property-read string|null $scriptPubKeyType
  * @property-read string|null $scriptPubKeyAddr
  * @property-read string|null $scriptPubKeyError
+ * @property-read string|null $redeemScriptType
  */
 class TxInput implements TxInOutInterface
 {
@@ -51,6 +54,8 @@ class TxInput implements TxInOutInterface
     private $segWitData;
     /** @var null|Script */
     private $redeemScript;
+    /** @var null|string */
+    private $redeemScriptType;
 
     /** @var null|string */
     private $scriptPubKeyType;
@@ -115,6 +120,7 @@ class TxInput implements TxInOutInterface
                 $uInt32LE = bin2hex(pack("V", $this->seqNo));
                 return new Base16($uInt32LE);
             case "scriptPubKeyError":
+            case "redeemScriptType":
             case "scriptPubKeyType":
             case "scriptPubKeyAddress":
                 return $this->$prop;
@@ -164,6 +170,12 @@ class TxInput implements TxInOutInterface
     public function setRedeemScript(Script $redeemScript): self
     {
         $this->redeemScript = $redeemScript;
+
+        // Is P2SH-P2WPKH script?
+        if (preg_match('/^0014[a-f0-9]{40}$/i', $redeemScript->script())) {
+            $this->redeemScriptType = "p2sh-p2wpkh";
+        }
+
         return $this;
     }
 
@@ -209,6 +221,78 @@ class TxInput implements TxInOutInterface
     public function getRedeemScript(): ?Script
     {
         return $this->redeemScript;
+    }
+
+    /**
+     * @param Base16 $signature
+     * @param PublicKey $publicKey
+     * @return Script
+     * @throws TransactionInputSignException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function createScriptSig(Base16 $signature, PublicKey $publicKey): Script
+    {
+        $signature->append("01"); // One-byte hash code type
+        $scriptSig = $this->tx->network->script()->new();
+
+        if (preg_match('/^p2sh/', $this->scriptPubKeyType)) { // P2SH
+            if (!$this->redeemScript) {
+                throw new TransactionInputSignException('Cannot create ScriptSig for a P2SH input without RedeemScript');
+            }
+
+            if ($this->redeemScriptType === "p2sh-p2wpkh") {
+                $scriptSig->PUSHDATA($this->redeemScript->script()->binary());
+                $this->setWitnessData($signature);
+                $this->setWitnessData($publicKey->compressed());
+            } else {
+                // 1st part for P2PKH, P2SH, P2SH-P2WPKH = Signature
+                $scriptSig->PUSHDATA($signature->binary());
+                // 2nd part of ScriptSig for P2SH = RedeemScript
+                $scriptSig->PUSHDATA($this->redeemScript->script()->binary());
+            }
+        } elseif ($this->scriptPubKeyType === "p2pkh") { // P2PKH
+            // 1st part for P2PKH, P2SH, P2SH-P2WPKH = Signature
+            $scriptSig->PUSHDATA($signature->binary());
+            // 2nd part of ScriptSig for P2PKH = PublicKey
+            $scriptSig->PUSHDATA($publicKey->compressed()->binary());
+        }
+
+        $scriptSig = $scriptSig->script();
+        $this->setScriptSig($scriptSig);
+        return $scriptSig;
+    }
+
+    /**
+     * @return Script|null
+     * @throws TransactionInputSignException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function getScriptCode(): ?Script
+    {
+        if (preg_match('/^p2sh/', $this->scriptPubKeyType)) {
+            if (!$this->redeemScript) {
+                throw new TransactionInputSignException('Cannot sign a P2SH input without RedeemScript');
+            }
+
+            if ($this->redeemScriptType === "p2sh-p2wpkh") {
+                $redeemScriptHash = substr($this->redeemScript->script()->hexits(false), 4, 40);
+                $scriptCode = $this->tx->network->script()->new()
+                    ->OP_DUP()
+                    ->OP_HASH160()
+                    ->PUSHDATA((new Base16($redeemScriptHash))->binary())
+                    ->OP_EQUALVERIFY()
+                    ->OP_CHECKSIG()
+                    ->script();
+
+                return $scriptCode;
+            }
+
+            return $this->redeemScript;
+        } elseif ($this->scriptPubKeyType === "p2pkh") {
+            return $this->scriptPubKey;
+        }
+
+        return null;
     }
 
     /**
@@ -285,7 +369,8 @@ class TxInput implements TxInOutInterface
         if ($this->redeemScript) {
             $inputData["redeemScript"] = [
                 "script" => $this->redeemScript->raw(),
-                "base16" => $this->redeemScript->script()->hexits(false)
+                "base16" => $this->redeemScript->script()->hexits(false),
+                "type" => $this->redeemScriptType
             ];
         }
 
