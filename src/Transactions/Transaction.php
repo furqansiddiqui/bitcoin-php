@@ -378,7 +378,7 @@ class Transaction
         $hash = $serialized->binary()->hash()->sha256()
             ->hash()->sha256(); // SHA256 twice
 
-        return new SerializedTransaction($serialized, $hash->base16());
+        return new SerializedTransaction($serialized, $hash->base16(), true);
     }
 
     /**
