@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
+use Comely\DataTypes\Buffer\Base16;
 use Comely\DataTypes\Buffer\Base64;
 use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
@@ -56,5 +57,18 @@ class Verifier
             $signature,
             $this->publicKey->node()->messages()->msgHash($message)
         );
+    }
+
+    /**
+     * @param Base16 $r
+     * @param Base16 $s
+     * @param Base16 $hash32Byte
+     * @return bool
+     */
+    public function hash32(Base16 $r, Base16 $s, Base16 $hash32Byte): bool
+    {
+        $signature = new Signature($r, $s);
+        $ecCurve = Curves::getInstanceOf($this->publicKey->getEllipticCurveId());
+        return $ecCurve->verify($this->publicKey->getEllipticCurvePubKeyObj(), $signature, $hash32Byte);
     }
 }
