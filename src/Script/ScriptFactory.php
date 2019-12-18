@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Script;
 
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
  * Class ScriptFactory
@@ -40,6 +41,25 @@ class ScriptFactory
     public function new(): OpCode
     {
         return new OpCode($this->node);
+    }
+
+    /**
+     * @param PublicKey $pubKey1
+     * @param PublicKey $pubKey2
+     * @param PublicKey $pubKey3
+     * @return Script
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function multiSig2of3(PublicKey $pubKey1, PublicKey $pubKey2, PublicKey $pubKey3): Script
+    {
+        return $this->new()
+            ->OP_2()
+            ->PUSHDATA($pubKey1->compressed()->binary())
+            ->PUSHDATA($pubKey2->compressed()->binary())
+            ->PUSHDATA($pubKey3->compressed()->binary())
+            ->OP_3()
+            ->OP_CHECKMULTISIG()
+            ->script();
     }
 
     /**
