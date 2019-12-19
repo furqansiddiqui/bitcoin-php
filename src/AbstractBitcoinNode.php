@@ -19,6 +19,7 @@ use FurqanSiddiqui\Bitcoin\Messages\Messages;
 use FurqanSiddiqui\Bitcoin\Networks\BitcoinNetworkConstants;
 use FurqanSiddiqui\Bitcoin\Script\P2SH_Factory;
 use FurqanSiddiqui\Bitcoin\Script\ScriptFactory;
+use FurqanSiddiqui\Bitcoin\Transactions\TransactionsFactory;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPairFactory;
 use FurqanSiddiqui\Bitcoin\Wallets\MasterKeyFactory;
 use FurqanSiddiqui\Bitcoin\Wallets\Wallets;
@@ -51,6 +52,8 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
     protected $p2shFactory;
     /** @var Messages */
     protected $messages;
+    /** @var TransactionsFactory */
+    protected $txsFactory;
 
     /**
      * AbstractBitcoinNode constructor.
@@ -149,5 +152,17 @@ abstract class AbstractBitcoinNode extends BitcoinNetworkConstants
         }
 
         return $this->messages;
+    }
+
+    /**
+     * @return TransactionsFactory
+     */
+    public function transactions(): TransactionsFactory
+    {
+        if (!$this->txsFactory) {
+            $this->txsFactory = new TransactionsFactory($this);
+        }
+
+        return $this->txsFactory;
     }
 }
