@@ -22,6 +22,7 @@ use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 /**
  * Class TxOutput
  * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
+ * @property-read int $index
  * @property-read int $valueAsInt
  * @property-read Base16 $valueUInt64LE
  * @property-read string|null $type
@@ -86,6 +87,7 @@ class TxOutput implements TxInOutInterface
                 // Convert value to uint64 little endian
                 $uInt64LE = bin2hex(pack("P", $this->value));
                 return new Base16($uInt64LE);
+            case "index":
             case "type":
             case "address":
             case "scriptError":
