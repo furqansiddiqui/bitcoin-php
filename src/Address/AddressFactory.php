@@ -68,23 +68,18 @@ class AddressFactory
         $base58Check = Base58Check::getInstance();
         $decodedAddress = $base58Check->decode($address);
         $decodedAddressHexits = $decodedAddress->hexits();
+        $decodedAddressPrefix = hexdec(substr($decodedAddressHexits, 0, 2));
 
         // P2PKH
         $p2pkhPrefix = $this->node->const_p2pkh_prefix;
-        if ($p2pkhPrefix) {
-            $p2pkhPrefixHex = dechex($p2pkhPrefix);
-            if (substr($decodedAddressHexits, 0, strlen($p2pkhPrefixHex)) === $p2pkhPrefixHex) {
-                return new P2PKH_Address($this->node, $address);
-            }
+        if (is_int($p2pkhPrefix) && $decodedAddressPrefix === $p2pkhPrefix) {
+            return new P2PKH_Address($this->node, $address);
         }
 
         // P2SH
         $p2shPrefix = $this->node->const_p2sh_prefix;
-        if ($p2shPrefix) {
-            $p2shPrefixHex = dechex($p2shPrefix);
-            if (substr($decodedAddressHexits, 0, strlen($p2shPrefixHex)) === $p2shPrefixHex) {
-                return new P2SH_Address($this->node, $address);
-            }
+        if (is_int($p2shPrefix) && $decodedAddressPrefix === $p2shPrefix) {
+            return new P2SH_Address($this->node, $address);
         }
 
         throw new PaymentAddressException('Could not identify given address as P2PKH/P2SH');
