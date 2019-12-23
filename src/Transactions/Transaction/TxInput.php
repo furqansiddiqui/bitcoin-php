@@ -137,7 +137,7 @@ class TxInput implements TxInOutInterface
             case "scriptPubKeyError":
             case "redeemScriptType":
             case "scriptPubKeyType":
-            case "scriptPubKeyAddress":
+            case "scriptPubKeyAddr":
                 return $this->$prop;
         }
 
