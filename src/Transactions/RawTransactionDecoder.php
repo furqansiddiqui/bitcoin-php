@@ -144,7 +144,9 @@ class RawTransactionDecoder
 
                     for ($i = 1; $i <= $witElemCount; $i++) {
                         $witElemLength = self::readNextVarInt($rawTxStream);
-                        $input->setWitnessData(new Base16(bin2hex($rawTxStream->next($witElemLength))));
+                        if ($witElemLength) {
+                            $input->setWitnessData(new Base16(bin2hex($rawTxStream->next($witElemLength))));
+                        }
                     }
 
                     unset($input);
