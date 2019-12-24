@@ -135,7 +135,7 @@ class Transaction
      */
     public function setVersion(int $version): self
     {
-        if ($version < 0 || !in_array($version, self::VALID_VERSIONS)) {
+        if ($version < 0 || $version > 0xffffffff) {
             throw new \InvalidArgumentException('Invalid transaction version');
         }
 
