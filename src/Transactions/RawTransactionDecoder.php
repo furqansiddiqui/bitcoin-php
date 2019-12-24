@@ -53,7 +53,7 @@ class RawTransactionDecoder
             $decodeProgress = "version bytes";
             // Start with version, first 4 bytes
             $versionInt = VarInt::Decode(bin2hex($rawTxStream->first(4)), 4);
-            if (!isset($versionInt) || !is_int($versionInt) || !in_array($versionInt, Transaction::VALID_VERSIONS)) {
+            if (!isset($versionInt) || !is_int($versionInt)) {
                 throw TransactionDecodeException::InvalidVersion();
             }
 
