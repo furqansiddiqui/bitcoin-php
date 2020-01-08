@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\HD;
 
+use Comely\DataTypes\Buffer\Base16;
 use Comely\DataTypes\Buffer\Binary;
 use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
 use FurqanSiddiqui\BIP32\Extend\PrivateKeyInterface;
@@ -37,12 +38,13 @@ class ExtendedKeyPair extends ExtendedKey
      * @param AbstractBitcoinNode $node
      * @param Binary $seed
      * @param ExtendedKeyInterface|null $parent
+     * @param Base16|null $childNumber
      * @throws \FurqanSiddiqui\BIP32\Exception\ExtendedKeyException
      */
-    public function __construct(AbstractBitcoinNode $node, Binary $seed, ?ExtendedKeyInterface $parent = null)
+    public function __construct(AbstractBitcoinNode $node, Binary $seed, ?ExtendedKeyInterface $parent = null, ?Base16 $childNumber = null)
     {
         $this->node = $node;
-        parent::__construct($seed, $parent);
+        parent::__construct($seed, $parent, $childNumber);
 
         // Configure ECDSA Curve
         if ($this->node->const_ecdsa_curve) {
@@ -70,7 +72,7 @@ class ExtendedKeyPair extends ExtendedKey
     public function derive(int $index, bool $isHardened = false): ExtendedKeyInterface
     {
         $extendedKey = parent::derive($index, $isHardened);
-        return new ExtendedKeyPair($this->node, $extendedKey->raw(), $this);
+        return new ExtendedKeyPair($this->node, $extendedKey->raw(), $this, $extendedKey->childNumber());
     }
 
     /**

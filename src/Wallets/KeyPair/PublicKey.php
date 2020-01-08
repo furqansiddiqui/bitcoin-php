@@ -15,11 +15,13 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
 use Comely\DataTypes\Buffer\Base16;
+use FurqanSiddiqui\Base58\Result\Base58Encoded;
 use FurqanSiddiqui\BIP32\Extend\PrivateKeyInterface;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2PKH_Address;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_P2WPKH_Address;
+use FurqanSiddiqui\Bitcoin\Exception\KeyPairExportException;
 use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey\Verifier;
 use FurqanSiddiqui\ECDSA\ECC\EllipticCurveInterface;
@@ -101,6 +103,26 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     public function verify(): Verifier
     {
         return new Verifier($this);
+    }
+
+    /**
+     * @param int|null $prefix
+     * @return Base58Encoded
+     * @throws KeyPairExportException
+     */
+    public function exportBIP32(?int $prefix = null): Base58Encoded
+    {
+        $prefix = $prefix ?? $this->privateKey->node()->const_bip32_public_prefix;
+        if (!is_int($prefix)) {
+            throw new KeyPairExportException('BIP32 public key prefix constant not defined');
+        }
+
+        $ekd = $this->privateKey->ekd();
+        if (!$ekd) {
+            throw new KeyPairExportException('This public key is not HD/BIP32 based');
+        }
+
+        return Base58Check::getInstance()->encode($ekd->serializePublicKey($prefix)->base16());
     }
 
     /**
