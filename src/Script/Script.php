@@ -234,6 +234,17 @@ class Script
     }
 
     /**
+     * @return Base16
+     */
+    public function hash256(): Base16
+    {
+        return $this->buffer->copy()->binary()
+            ->hash()->sha256()
+            ->hash()->sha256()
+            ->base16()->readOnly(true);
+    }
+
+    /**
      * @return P2SH_Address
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
      */
