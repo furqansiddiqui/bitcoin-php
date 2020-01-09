@@ -55,6 +55,7 @@ class OpCode
     public const OP_CODES = [
         "OP_0" => 0x00,
         "OP_TRUE" => 0x51,
+        "OP_1" => 0x51,
         "OP_2" => 0x52,
         "OP_3" => 0x53,
         "OP_4" => 0x54,
