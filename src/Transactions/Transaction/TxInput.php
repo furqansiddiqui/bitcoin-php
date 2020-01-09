@@ -296,7 +296,6 @@ class TxInput implements TxInOutInterface
     /**
      * @return Script|null
      * @throws TransactionInputSignException
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
     public function getScriptCode(): ?Script
     {
@@ -305,7 +304,7 @@ class TxInput implements TxInOutInterface
                 throw new TransactionInputSignException('Cannot sign a P2SH input without RedeemScript');
             }
 
-            if ($this->redeemScriptType === "p2sh-p2wpkh") {
+            /*if ($this->redeemScriptType === "p2sh-p2wpkh") {
                 $redeemScriptHash = substr($this->redeemScript->script()->hexits(false), 4, 40);
                 return $this->tx->network->script()->new()
                     ->OP_DUP()
@@ -314,7 +313,7 @@ class TxInput implements TxInOutInterface
                     ->OP_EQUALVERIFY()
                     ->OP_CHECKSIG()
                     ->script();
-            }
+            }*/
 
             return $this->redeemScript;
         } elseif ($this->scriptPubKeyType === "p2pkh") {
