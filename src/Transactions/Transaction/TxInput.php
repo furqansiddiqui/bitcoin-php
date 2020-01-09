@@ -193,7 +193,7 @@ class TxInput implements TxInOutInterface
         $scriptBase16 = $redeemScript->script()->hexits(false);
         if (preg_match('/^0014[a-f0-9]{40}$/i', $scriptBase16)) {
             $this->redeemScriptType = "p2sh-p2wpkh";
-        } elseif (preg_match('/^0014[a-f0-9]{64}$/i', $scriptBase16)) {
+        } elseif (preg_match('/^0020[a-f0-9]{64}$/i', $scriptBase16)) {
             $this->redeemScriptType = "p2sh-p2wsh";
         }
 
