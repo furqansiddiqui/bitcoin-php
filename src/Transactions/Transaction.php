@@ -437,7 +437,7 @@ class Transaction
                         ->script();
 
                     // Witness Data
-                    $input->setWitnessData(new Base16(""));
+                    $input->setWitnessData(new Base16());
 
                     /** @var Base16 $signature */
                     foreach ($signatures as $signature) {
@@ -499,8 +499,11 @@ class Transaction
                 $serialized->append(VarInt::Encode(count($inputWitnessFields)));
                 /** @var Base16 $inWitnessElem */
                 foreach ($inputWitnessFields as $inWitnessElem) {
-                    $serialized->append(VarInt::Encode($inWitnessElem->binary()->size()->bytes()));
-                    $serialized->append($inWitnessElem);
+                    $inWitnessElemLen = $inWitnessElem->binary()->size()->bytes();
+                    $serialized->append(VarInt::Encode($inWitnessElemLen));
+                    if($inWitnessElemLen) {
+                        $serialized->append($inWitnessElem);
+                    }
                 }
 
                 unset($inWitness, $input, $inWitnessElem);
