@@ -348,6 +348,13 @@ class Transaction
                 ->OP_EQUALVERIFY()
                 ->OP_CHECKSIG()
                 ->script();
+        } elseif ($input->redeemScriptType === "p2sh-p2wsh") {
+            $signingMethod = $input->getSigningMethod();
+            if ($signingMethod instanceof MultiSigScript) {
+                $scriptCode = $signingMethod->redeemScript();
+            } else {
+                $scriptCode = $input->getRedeemScript();
+            }
         }
 
         if (!$scriptCode) {
@@ -430,7 +437,7 @@ class Transaction
                         ->script();
 
                     // Witness Data
-                    $input->setWitnessData(new Base16("00"));
+                    $input->setWitnessData(new Base16(""));
 
                     /** @var Base16 $signature */
                     foreach ($signatures as $signature) {
@@ -449,6 +456,8 @@ class Transaction
                     $scriptCode->PUSHDATA($inputScriptSigMethod->redeemScript()->script()->binary());
                     $scriptSig = $scriptCode->script();
                 }
+
+                $input->setScriptSig($scriptSig);
             }
 
             if (!$scriptSig) {
