@@ -47,19 +47,23 @@ class ScriptFactory
      * @param PublicKey $pubKey1
      * @param PublicKey $pubKey2
      * @param PublicKey $pubKey3
-     * @return Script
+     * @return MultiSigScript
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
-    public function multiSig2of3(PublicKey $pubKey1, PublicKey $pubKey2, PublicKey $pubKey3): Script
+    public function multiSig2of3(PublicKey $pubKey1, PublicKey $pubKey2, PublicKey $pubKey3): MultiSigScript
     {
-        return $this->new()
-            ->OP_2()
-            ->PUSHDATA($pubKey1->compressed()->binary())
-            ->PUSHDATA($pubKey2->compressed()->binary())
-            ->PUSHDATA($pubKey3->compressed()->binary())
-            ->OP_3()
-            ->OP_CHECKMULTISIG()
-            ->script();
+        return $this->multiSig(2, ...[$pubKey1, $pubKey2, $pubKey3]);
+    }
+
+    /**
+     * @param int $signaturesRequired
+     * @param PublicKey ...$publicKeys
+     * @return MultiSigScript
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function multiSig(int $signaturesRequired, PublicKey ...$publicKeys): MultiSigScript
+    {
+        return new MultiSigScript($this->node, $signaturesRequired, ...$publicKeys);
     }
 
     /**
