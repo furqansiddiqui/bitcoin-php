@@ -110,7 +110,7 @@ class MultiSigScript
     {
         $redeemScriptHash = $this->network->script()->new()
             ->OP_0()
-            ->PUSHDATA($this->redeemScript->hash256()->binary())
+            ->PUSHDATA($this->redeemScript->sha256()->binary())
             ->script();
 
         $p2sh = $this->network->p2sh()->fromRedeemScript($redeemScriptHash);
