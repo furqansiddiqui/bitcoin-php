@@ -17,6 +17,7 @@ namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException;
+use FurqanSiddiqui\Bitcoin\Script\MultiSigScript;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
@@ -54,6 +55,8 @@ class TxInput implements TxInOutInterface
     private $scriptSig;
     /** @var null|PrivateKey */
     private $privateKey;
+    /** @var null|MultiSigScript */
+    private $multiSigScript;
     /** @var array */
     private $segWitData;
     /** @var null|Script */
@@ -187,8 +190,11 @@ class TxInput implements TxInOutInterface
         $this->redeemScript = $redeemScript;
 
         // Is P2SH-P2WPKH script?
-        if (preg_match('/^0014[a-f0-9]{40}$/i', $redeemScript->script()->hexits())) {
+        $scriptBase16 = $redeemScript->script()->hexits(false);
+        if (preg_match('/^0014[a-f0-9]{40}$/i', $scriptBase16)) {
             $this->redeemScriptType = "p2sh-p2wpkh";
+        } elseif (preg_match('/^0014[a-f0-9]{64}$/i', $scriptBase16)) {
+            $this->redeemScriptType = "p2sh-p2wsh";
         }
 
         return $this;
@@ -205,11 +211,21 @@ class TxInput implements TxInOutInterface
     }
 
     /**
-     * @return Script|PrivateKey|null
+     * @param MultiSigScript $multiSigScript
+     * @return $this
+     */
+    public function signaturesFromMultiSig(MultiSigScript $multiSigScript): self
+    {
+        $this->multiSigScript = $multiSigScript;
+        return $this;
+    }
+
+    /**
+     * @return MultiSigScript|Script|PrivateKey|null
      */
     public function getSigningMethod()
     {
-        return $this->scriptSig ?? $this->privateKey ?? null;
+        return $this->scriptSig ?? $this->privateKey ?? $this->multiSigScript ?? null;
     }
 
     /**
@@ -291,15 +307,13 @@ class TxInput implements TxInOutInterface
 
             if ($this->redeemScriptType === "p2sh-p2wpkh") {
                 $redeemScriptHash = substr($this->redeemScript->script()->hexits(false), 4, 40);
-                $scriptCode = $this->tx->network->script()->new()
+                return $this->tx->network->script()->new()
                     ->OP_DUP()
                     ->OP_HASH160()
                     ->PUSHDATA((new Base16($redeemScriptHash))->binary())
                     ->OP_EQUALVERIFY()
                     ->OP_CHECKSIG()
                     ->script();
-
-                return $scriptCode;
             }
 
             return $this->redeemScript;

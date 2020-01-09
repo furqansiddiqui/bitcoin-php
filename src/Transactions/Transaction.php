@@ -18,6 +18,7 @@ use Comely\DataTypes\Buffer\Base16;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException;
 use FurqanSiddiqui\Bitcoin\Protocol\VarInt;
+use FurqanSiddiqui\Bitcoin\Script\MultiSigScript;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInput;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInputs;
@@ -280,9 +281,9 @@ class Transaction
         // Append Outputs
         $this->serializeBufferAppendOutputs($preImage, $hashOutputs);
 
-        // Check if Input in SegWit P2SH-P2WPKH
+        // Check if Input in SegWit P2SH-P2WPKH/P2SH-P2WSH
         if ($signingInput) {
-            if ($signingInput->redeemScriptType === "p2sh-p2wpkh") {
+            if (in_array($signingInput->redeemScriptType, ["p2sh-p2wpkh", "p2sh-p2wsh"])) {
                 // Swap buffer with SegWit format hashPreImage buffer
                 $preImage = $this->hashPreImageSegWit($signingInput, $hashPrevOuts, $hashSequences, $hashOutputs);
             }
@@ -416,6 +417,38 @@ class Transaction
                 // Sign with private key
                 $signature = $inputScriptSigMethod->sign()->transaction($this->hashPreImage($inputNum));
                 $scriptSig = $input->createScriptSig($signature, $inputScriptSigMethod->publicKey());
+            } elseif ($inputScriptSigMethod instanceof MultiSigScript) {
+                // Take signatures from MultiSigScript object
+                $signatures = $inputScriptSigMethod->getSignatures($this, $inputNum);
+                if (!$signatures) {
+                    throw new TransactionInputSignException('There are no private keys in MultiSigScript object');
+                }
+
+                if ($input->redeemScriptType === "p2sh-p2wsh") { // SegWit
+                    $scriptSig = $this->network->script()->new()
+                        ->PUSHDATA($input->getRedeemScript()->script()->binary())
+                        ->script();
+
+                    // Witness Data
+                    $input->setWitnessData(new Base16("00"));
+
+                    /** @var Base16 $signature */
+                    foreach ($signatures as $signature) {
+                        $input->setWitnessData($signature);
+                    }
+
+                    $input->setWitnessData($inputScriptSigMethod->redeemScript()->script());
+                } else { // Legacy
+                    $scriptCode = $this->network->script()->new()
+                        ->OP_0();
+                    /** @var Base16 $signature */
+                    foreach ($signatures as $signature) {
+                        $scriptCode->PUSHDATA($signature->binary());
+                    }
+
+                    $scriptCode->PUSHDATA($inputScriptSigMethod->redeemScript()->script()->binary());
+                    $scriptSig = $scriptCode->script();
+                }
             }
 
             if (!$scriptSig) {

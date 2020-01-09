@@ -17,6 +17,8 @@ namespace FurqanSiddiqui\Bitcoin\Script;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_P2WSH_Address;
+use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
@@ -35,6 +37,8 @@ class MultiSigScript
     private $publicKeys;
     /** @var Script */
     private $redeemScript;
+    /** @var array */
+    private $privateKeys;
 
     /**
      * MultiSigScript constructor.
@@ -53,6 +57,7 @@ class MultiSigScript
         $this->total = 0;
         $this->req = $req;
         $this->publicKeys = [];
+        $this->privateKeys = [];
         foreach ($publicKeys as $publicKey) {
             $this->publicKeys[] = $publicKey;
             $this->total++;
@@ -77,6 +82,14 @@ class MultiSigScript
         $opCode->OP(sprintf('OP_%d', $this->total));
         $opCode->OP_CHECKMULTISIG();
         $this->redeemScript = $opCode->script();
+    }
+
+    /**
+     * @return Script
+     */
+    public function redeemScript(): Script
+    {
+        return $this->redeemScript;
     }
 
     /**
@@ -112,5 +125,39 @@ class MultiSigScript
     public function p2sh_P2WSH(): P2SH_P2WSH_Address
     {
         return $this->segWit();
+    }
+
+    /**
+     * @param PrivateKey $privateKey
+     * @return $this
+     */
+    public function addPrivateKey(PrivateKey $privateKey): self
+    {
+        $this->privateKeys[] = $privateKey;
+        return $this;
+    }
+
+    /**
+     * @param Transaction $tx
+     * @param int $inputIndex
+     * @param string|null $appendHashCodeType
+     * @return array
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException
+     */
+    public function getSignatures(Transaction $tx, int $inputIndex, ?string $appendHashCodeType = "01"): array
+    {
+        $signatures = [];
+        /** @var PrivateKey $privateKey */
+        foreach ($this->privateKeys as $privateKey) {
+            $sign = $privateKey->sign()->transaction($tx->hashPreImage($inputIndex))->copy();
+            if ($appendHashCodeType) {
+                $sign->append($appendHashCodeType);
+            }
+
+            $signatures[] = $sign;
+        }
+
+        return $signatures;
     }
 }
