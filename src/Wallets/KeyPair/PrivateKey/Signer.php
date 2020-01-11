@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
 use Comely\DataTypes\Buffer\Base16;
+use Comely\DataTypes\Buffer\Base64;
 use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\Bitcoin\Messages\SignedMessage;
 use FurqanSiddiqui\Bitcoin\Transactions\SerializedTransaction;
@@ -94,11 +95,11 @@ class Signer
         // SignedMessage
         $signedMessage = new SignedMessage();
         $signedMessage->msgHash = $hash32Byte;
-        $signedMessage->signature = base64_encode(implode("", [
+        $signedMessage->signature = new Base64(base64_encode(implode("", [
             chr($flag),
             $signature->r()->binary()->raw(),
             $signature->s()->binary()->raw(),
-        ]));
+        ])));
 
         return $signedMessage;
     }
