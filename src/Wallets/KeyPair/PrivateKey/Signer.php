@@ -18,6 +18,7 @@ use Comely\DataTypes\Buffer\Base16;
 use Comely\DataTypes\Buffer\Base64;
 use FurqanSiddiqui\BIP32\ECDSA\Curves;
 use FurqanSiddiqui\Bitcoin\Messages\SignedMessage;
+use FurqanSiddiqui\Bitcoin\Protocol\VarInt;
 use FurqanSiddiqui\Bitcoin\Transactions\SerializedTransaction;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 
@@ -96,7 +97,7 @@ class Signer
         $signedMessage = new SignedMessage();
         $signedMessage->msgHash = $hash32Byte;
         $signedMessage->signature = new Base64(base64_encode(implode("", [
-            chr($flag),
+            hex2bin(VarInt::Encode($flag)),
             $signature->r()->binary()->raw(),
             $signature->s()->binary()->raw(),
         ])));

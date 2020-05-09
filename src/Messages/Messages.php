@@ -18,6 +18,7 @@ use Comely\DataTypes\Buffer\Base16;
 use Comely\DataTypes\Buffer\Base64;
 use Comely\DataTypes\Buffer\Binary;
 use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\Bitcoin\Protocol\VarInt;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
@@ -50,9 +51,9 @@ class Messages
         $messageLen = strlen($message);
 
         $buffer = new Binary();
-        $buffer->append(chr($signedMessagePrefixLen));
+        $buffer->append(hex2bin(VarInt::Encode($signedMessagePrefixLen)));
         $buffer->append($signedMessagePrefix);
-        $buffer->append(chr($messageLen));
+        $buffer->append(hex2bin(VarInt::Encode($messageLen)));
         $buffer->append($message);
 
         $digest = $buffer->hash()->digest("sha256", 2);
