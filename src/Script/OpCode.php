@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,8 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
-use Comely\DataTypes\Buffer\Binary;
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use Comely\Buffer\AbstractByteArray;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 
 /**
  * Class OpCode
@@ -98,19 +98,14 @@ class OpCode
         "OP_CHECKMULTISIGVERIFY" => 0xaf
     ];
 
-    /** @var AbstractBitcoinNode */
-    private $node;
     /** @var array */
-    private $script;
+    private array $script = [];
 
     /**
-     * OpCode constructor.
-     * @param AbstractBitcoinNode $node
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      */
-    public function __construct(AbstractBitcoinNode $node)
+    public function __construct(private readonly Bitcoin $btc)
     {
-        $this->node = $node;
-        $this->script = [];
     }
 
     /**
@@ -120,7 +115,7 @@ class OpCode
      */
     public function __call($name, $arguments)
     {
-        if (substr($name, 0, 3) === "OP_") {
+        if (str_starts_with($name, "OP_")) {
             return $this->OP($name);
         }
 
@@ -143,19 +138,19 @@ class OpCode
     }
 
     /**
-     * @param Binary $data
-     * @return OpCode
+     * @param \Comely\Buffer\AbstractByteArray $data
+     * @return $this
      */
-    public function PUSHDATA(Binary $data): self
+    public function PUSHDATA(AbstractByteArray $data): self
     {
-        $dataLen = $data->size()->bytes();
+        $dataLen = $data->len();
         if ($dataLen < 1) {
             throw new \LengthException('PUSHDATA method can only be used for data between 1 and 75 bytes');
         }
 
         // Simple PUSHDATA (length 1 to 75 bytes)
         if ($dataLen <= 75) {
-            $this->script[] = sprintf('PUSHDATA(%d)[%s]', $dataLen, $data->base16()->hexits(false));
+            $this->script[] = sprintf('PUSHDATA(%d)[%s]', $dataLen, $data->toBase16());
             return $this;
         }
 
@@ -176,25 +171,16 @@ class OpCode
             $pushDataLenHex = "0" . $pushDataLenHex;
         }
 
-        $this->script[] = sprintf('PUSHDATA%d[%s%s]', $pushDataPrefix, $pushDataLenHex, $data->base16()->hexits(false));
+        $this->script[] = sprintf('PUSHDATA%d[%s%s]', $pushDataPrefix, $pushDataLenHex, $data->toBase16());
         return $this;
     }
 
     /**
-     * @return Script
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
-     */
-    public function script(): Script
-    {
-        return new Script($this->node, implode(" ", $this->script));
-    }
-
-    /**
-     * @return Script
+     * @return \FurqanSiddiqui\Bitcoin\Script\Script
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
     public function getScript(): Script
     {
-        return $this->script();
+        return new Script($this->btc, implode(" ", $this->script));
     }
 }
