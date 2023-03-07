@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,22 +14,81 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Networks;
 
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\BIP32\Buffers\Bits32;
 
 /**
  * Class Bitcoin
  * @package FurqanSiddiqui\Bitcoin\Networks
  */
-class Bitcoin extends AbstractBitcoinNode
+class Bitcoin extends AbstractNetworkConfig
 {
-    public const NAME = "Bitcoin";
-    public const DECIMALS = 8;
-    public const P2PKH_PREFIX = 0x00;
-    public const P2SH_PREFIX = 0x05;
-    public const WIF_PREFIX = 0x80;
-    public const SIGNED_MESSAGE_PREFIX = "Bitcoin Signed Message:\n";
-    public const BIP32_SEED_KEY = "Bitcoin seed";
-    public const BIP32_PRIVATE_PREFIX = 0x0488ADE4;
-    public const BIP32_PUBLIC_PREFIX = 0x0488B21E;
-    public const BIP44_COIN_INDEX = 0;
+    /**
+     * @return static
+     */
+    public static function Mainnet(): static
+    {
+        return static::CustomNetwork(
+            name: "Bitcoin Mainnet",
+            p2pkh_prefix: 0x00,
+            p2sh_prefix: 0x05,
+            wif_prefix: 0x80,
+            bip32_privatePrefix: new Bits32(hex2bin("0488ADE4")),
+            bip32_publicPrefix: new Bits32(hex2bin("0488B21E")),
+        );
+    }
+
+    /**
+     * @return static
+     */
+    public static function Testnet3(): static
+    {
+        return static::CustomNetwork(
+            name: "Bitcoin Testnet3",
+            p2pkh_prefix: 0x6F,
+            p2sh_prefix: 0xC4,
+            wif_prefix: 0xEF,
+            bip32_privatePrefix: new Bits32(hex2bin("04358394")),
+            bip32_publicPrefix: new Bits32(hex2bin("043587CF")),
+        );
+    }
+
+    /**
+     * @param string $name
+     * @param int $scale
+     * @param int $p2pkh_prefix
+     * @param int $p2sh_prefix
+     * @param int $wif_prefix
+     * @param \FurqanSiddiqui\BIP32\Buffers\Bits32|null $bip32_privatePrefix
+     * @param \FurqanSiddiqui\BIP32\Buffers\Bits32|null $bip32_publicPrefix
+     * @param int $bip32_hardenedIndexBeginsFrom
+     * @param string $bip32_hmacSeed
+     * @param string $signedMessagePrefix
+     * @return static
+     */
+    public static function CustomNetwork(
+        string  $name,
+        int     $scale = 8,
+        int     $p2pkh_prefix = 0x00,
+        int     $p2sh_prefix = 0x05,
+        int     $wif_prefix = 0x80,
+        ?Bits32 $bip32_privatePrefix = null,
+        ?Bits32 $bip32_publicPrefix = null,
+        int     $bip32_hardenedIndexBeginsFrom = 0x80000000,
+        string  $bip32_hmacSeed = "Bitcoin seed",
+        string  $signedMessagePrefix = "Bitcoin Signed Message:\n"
+    ): static
+    {
+        return new static(
+            name: $name,
+            scale: $scale,
+            p2pkh_prefix: $p2pkh_prefix,
+            p2sh_prefix: $p2sh_prefix,
+            wif_prefix: $wif_prefix,
+            signedMessagePrefix: $signedMessagePrefix,
+            bip32_hmacSeed: $bip32_hmacSeed,
+            bip32_privatePrefix: $bip32_privatePrefix ?? new Bits32(hex2bin("0488ADE4")),
+            bip32_publicPrefix: $bip32_publicPrefix ?? new Bits32(hex2bin("0488B21E")),
+            bip32_hardenedIndexBeginsFrom: $bip32_hardenedIndexBeginsFrom
+        );
+    }
 }
