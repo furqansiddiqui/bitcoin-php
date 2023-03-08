@@ -88,7 +88,8 @@ class Bitcoin extends AbstractNetworkConfig
             bip32_hmacSeed: $bip32_hmacSeed,
             bip32_privatePrefix: $bip32_privatePrefix ?? new Bits32(hex2bin("0488ADE4")),
             bip32_publicPrefix: $bip32_publicPrefix ?? new Bits32(hex2bin("0488B21E")),
-            bip32_hardenedIndexBeginsFrom: $bip32_hardenedIndexBeginsFrom
+            bip32_hardenedIndexBeginsFrom: $bip32_hardenedIndexBeginsFrom,
+            base58Charset: "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
         );
     }
 }

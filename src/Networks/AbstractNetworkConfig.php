@@ -45,7 +45,7 @@ abstract class AbstractNetworkConfig extends \FurqanSiddiqui\BIP32\Networks\Abst
         public readonly Bits32 $bip32_privatePrefix,
         public readonly Bits32 $bip32_publicPrefix,
         public readonly int    $bip32_hardenedIndexBeginsFrom,
-
+        public readonly string $base58Charset,
     )
     {
         parent::__construct(
