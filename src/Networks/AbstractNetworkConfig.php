@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Networks;
 
+use Comely\Buffer\AbstractByteArray;
+use Comely\Buffer\Bytes20;
 use FurqanSiddiqui\BIP32\Buffers\Bits32;
 
 /**
@@ -60,6 +62,12 @@ abstract class AbstractNetworkConfig extends \FurqanSiddiqui\BIP32\Networks\Abst
             $base58CaseSensitive,
         );
     }
+
+    /**
+     * @param \Comely\Buffer\AbstractByteArray $buffer
+     * @return \Comely\Buffer\Bytes20
+     */
+    abstract public function hash160(AbstractByteArray $buffer): Bytes20;
 
     /**
      * @return static
