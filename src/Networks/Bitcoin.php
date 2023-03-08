@@ -62,6 +62,8 @@ class Bitcoin extends AbstractNetworkConfig
      * @param \FurqanSiddiqui\BIP32\Buffers\Bits32|null $bip32_publicPrefix
      * @param int $bip32_hardenedIndexBeginsFrom
      * @param string $bip32_hmacSeed
+     * @param string $base58Charset
+     * @param bool $base58CaseSensitive
      * @param string $signedMessagePrefix
      * @return static
      */
@@ -75,7 +77,9 @@ class Bitcoin extends AbstractNetworkConfig
         ?Bits32 $bip32_publicPrefix = null,
         int     $bip32_hardenedIndexBeginsFrom = 0x80000000,
         string  $bip32_hmacSeed = "Bitcoin seed",
-        string  $signedMessagePrefix = "Bitcoin Signed Message:\n"
+        string  $base58Charset = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
+        bool    $base58CaseSensitive = true,
+        string  $signedMessagePrefix = "Bitcoin Signed Message:\n",
     ): static
     {
         return new static(
@@ -89,7 +93,8 @@ class Bitcoin extends AbstractNetworkConfig
             bip32_privatePrefix: $bip32_privatePrefix ?? new Bits32(hex2bin("0488ADE4")),
             bip32_publicPrefix: $bip32_publicPrefix ?? new Bits32(hex2bin("0488B21E")),
             bip32_hardenedIndexBeginsFrom: $bip32_hardenedIndexBeginsFrom,
-            base58Charset: "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+            base58Charset: $base58Charset,
+            base58CaseSensitive: $base58CaseSensitive
         );
     }
 }

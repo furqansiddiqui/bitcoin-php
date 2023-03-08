@@ -33,6 +33,8 @@ abstract class AbstractNetworkConfig extends \FurqanSiddiqui\BIP32\Networks\Abst
      * @param \FurqanSiddiqui\BIP32\Buffers\Bits32 $bip32_privatePrefix
      * @param \FurqanSiddiqui\BIP32\Buffers\Bits32 $bip32_publicPrefix
      * @param int $bip32_hardenedIndexBeginsFrom
+     * @param string $base58Charset
+     * @param bool $base58CaseSensitive
      */
     final protected function __construct(
         public readonly string $name,
@@ -41,18 +43,21 @@ abstract class AbstractNetworkConfig extends \FurqanSiddiqui\BIP32\Networks\Abst
         public readonly int    $p2sh_prefix,
         public readonly int    $wif_prefix,
         public readonly string $signedMessagePrefix,
-        public readonly string $bip32_hmacSeed,
-        public readonly Bits32 $bip32_privatePrefix,
-        public readonly Bits32 $bip32_publicPrefix,
-        public readonly int    $bip32_hardenedIndexBeginsFrom,
-        public readonly string $base58Charset,
+        string                 $bip32_hmacSeed,
+        Bits32                 $bip32_privatePrefix,
+        Bits32                 $bip32_publicPrefix,
+        int                    $bip32_hardenedIndexBeginsFrom,
+        string                 $base58Charset,
+        bool                   $base58CaseSensitive,
     )
     {
         parent::__construct(
-            $this->bip32_privatePrefix,
-            $this->bip32_publicPrefix,
-            $this->bip32_hardenedIndexBeginsFrom,
-            $this->bip32_hmacSeed
+            $bip32_privatePrefix,
+            $bip32_publicPrefix,
+            $bip32_hardenedIndexBeginsFrom,
+            $bip32_hmacSeed,
+            $base58Charset,
+            $base58CaseSensitive,
         );
     }
 
