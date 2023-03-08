@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,7 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use Comely\Buffer\AbstractByteArray;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
@@ -23,16 +24,11 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
  */
 class ScriptFactory
 {
-    /** @var AbstractBitcoinNode */
-    private $node;
-
     /**
-     * ScriptFactory constructor.
-     * @param AbstractBitcoinNode $node
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      */
-    public function __construct(AbstractBitcoinNode $node)
+    public function __construct(private readonly Bitcoin $btc)
     {
-        $this->node = $node;
     }
 
     /**
@@ -40,7 +36,7 @@ class ScriptFactory
      */
     public function new(): OpCode
     {
-        return new OpCode($this->node);
+        return new OpCode($this->btc);
     }
 
     /**
@@ -52,7 +48,7 @@ class ScriptFactory
      */
     public function multiSig2of3(PublicKey $pubKey1, PublicKey $pubKey2, PublicKey $pubKey3): MultiSigScript
     {
-        return $this->multiSig(2, ...[$pubKey1, $pubKey2, $pubKey3]);
+        return $this->multiSig(2, $pubKey1, $pubKey2, $pubKey3);
     }
 
     /**
@@ -63,53 +59,17 @@ class ScriptFactory
      */
     public function multiSig(int $signaturesRequired, PublicKey ...$publicKeys): MultiSigScript
     {
-        return new MultiSigScript($this->node, $signaturesRequired, ...$publicKeys);
+        return new MultiSigScript($this->btc, $signaturesRequired, ...$publicKeys);
     }
 
     /**
-     * @param string $script
-     * @return Script
+     * @param string|\Comely\Buffer\AbstractByteArray $script
+     * @return \FurqanSiddiqui\Bitcoin\Script\Script
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
-    public function script(string $script): Script
+    public function script(string|AbstractByteArray $script): Script
     {
-        if (preg_match('/^[a-f0-9]+$/i', $script)) {
-            return $this->fromSerialized($script);
-        }
-
-        return $this->fromRaw($script);
-    }
-
-    /**
-     * @param string $script
-     * @return Script
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
-     */
-    public function getScript(string $script): Script
-    {
-        return $this->script($script);
-    }
-
-    /**
-     * @param string $serializedBase16Script
-     * @return Script
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
-     */
-    public function fromSerialized(string $serializedBase16Script): Script
-    {
-        return Script::Decode($this->node, $serializedBase16Script);
-    }
-
-    /**
-     * @param string $script
-     * @return Script
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
-     */
-    public function fromRaw(string $script): Script
-    {
-        return new Script($this->node, $script);
+        return Script::Decode($this->btc, $script);
     }
 }

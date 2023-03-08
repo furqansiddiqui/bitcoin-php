@@ -177,10 +177,11 @@ class OpCode
 
     /**
      * @return \FurqanSiddiqui\Bitcoin\Script\Script
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
     public function getScript(): Script
     {
-        return new Script($this->btc, implode(" ", $this->script));
+        return Script::Decode($this->btc, implode(" ", $this->script));
     }
 }

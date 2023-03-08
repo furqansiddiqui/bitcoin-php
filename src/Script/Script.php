@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,10 +14,12 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Script;
 
-use Comely\DataTypes\Buffer\Base16;
-use Comely\DataTypes\DataTypes;
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
-use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
+use Comely\Buffer\AbstractByteArray;
+use Comely\Buffer\BigInteger\LittleEndian;
+use Comely\Buffer\Buffer;
+use Comely\Buffer\Bytes20;
+use Comely\Buffer\Exception\ByteReaderUnderflowException;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException;
 use FurqanSiddiqui\Bitcoin\Exception\ScriptParseException;
 
@@ -27,109 +29,92 @@ use FurqanSiddiqui\Bitcoin\Exception\ScriptParseException;
  */
 class Script
 {
-    /** @var AbstractBitcoinNode */
-    private $node;
-    /** @var string */
-    private $raw;
-    /** @var Base16 */
-    private $buffer;
-    /** @var Base16 */
-    private $hash160;
+    public readonly string $script;
+    public readonly Buffer $buffer;
+    public readonly Bytes20 $hash160;
 
     /**
-     * @param string $serializedBase16Script
+     * @param \Comely\Buffer\AbstractByteArray $buffer
      * @return string
-     * @throws ScriptDecodeException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      */
-    public static function DecodeAsString(string $serializedBase16Script): string
+    public static function Buffer2String(AbstractByteArray $buffer): string
     {
-        if (!DataTypes::isBase16($serializedBase16Script)) {
-            throw new ScriptDecodeException('OpCode script decode expects argument to be a valid Base16 string');
-        }
-
         $opCodes = array_flip(OpCode::OP_CODES);
-        $binary = (new Base16($serializedBase16Script))->binary();
-        $reader = $binary->read();
+        $reader = $buffer->read();
         $script = [];
 
-        while (true) {
-            if ($reader->isEnd()) {
-                break;
-            }
-
-            $block = $reader->next(1);
-            if (!$block) {
-                break;
-            }
-
-            $dec = hexdec(bin2hex($block));
-
-            // PUSHDATA?
-            if ($dec >= 1 && $dec <= 75) {
-                $len = $dec;
-                $data = $reader->next($len);
-                if (!$data) {
-                    throw new ScriptDecodeException(sprintf('Failed to read PUSHDATA %d bytes', $len));
+        try {
+            while (true) {
+                if ($reader->isEnd()) {
+                    break;
                 }
 
-                $script[] = sprintf('PUSHDATA(%d)[%s]', $len, bin2hex($data));
-                continue;
-            }
+                $flag = ord($reader->next(1));
 
-            // PUSHDATA1, 2 or 4?
-            if (in_array($dec, [76, 77, 78])) {
-                switch ($dec) {
-                    case 78:
-                        $lenBytes = 4; // Todo: Little endian
-                        break;
-                    case 77:
-                        $lenBytes = 2; // Todo: Little endian
-                        break;
-                    default:
-                        $lenBytes = 1;
-                        break;
+                // PUSHDATA?
+                if ($flag >= 1 && $flag <= 75) {
+                    $script[] = sprintf('PUSHDATA(%d)[%s]', $flag, bin2hex($reader->next($flag)));
+                    continue;
                 }
 
-                $dataLen = hexdec(bin2hex($reader->next($lenBytes)));
-                $data = $reader->next($dataLen);
-                $script[] = sprintf('PUSHDATA%d[%s]', $lenBytes, bin2hex($data));
-                continue;
-            }
+                // PUSHDATA1, 2 or 4?
+                if (in_array($flag, [76, 77, 78])) {
+                    $lenBytes = match ($flag) {
+                        78 => 4,
+                        77 => 2,
+                        default => 1,
+                    };
 
-            // OpCode
-            $opCode = $opCodes[$dec] ?? null;
-            if ($opCode) {
-                $script[] = $opCode;
-                continue;
-            }
+                    $dataLenBytes = $reader->next($lenBytes);
+                    $dataLen = gmp_intval(LittleEndian::GMP_Unpack($dataLenBytes));
+                    $script[] = sprintf('PUSHDATA%d[%s%s]', $lenBytes, bin2hex($dataLenBytes), bin2hex($reader->next($dataLen)));
+                    continue;
+                }
 
-            throw new ScriptDecodeException(
-                sprintf('Could not convert OpCode "%s" to appropriate script', dechex($dec))
-            );
+                // OpCode
+                $opCode = $opCodes[$flag] ?? null;
+                if ($opCode) {
+                    $script[] = $opCode;
+                    continue;
+                }
+
+                throw new ScriptDecodeException(
+                    sprintf('Could not convert OpCode "0x%s" to appropriate script', dechex($flag))
+                );
+            }
+        } catch (ByteReaderUnderflowException $e) {
+            throw new ScriptDecodeException($e->getMessage(), $e->getCode());
         }
 
         return implode(" ", $script);
     }
 
     /**
-     * @param AbstractBitcoinNode $node
-     * @param string $serializedBase16Script
-     * @return Script
-     * @throws ScriptDecodeException
-     * @throws ScriptParseException
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
+     * @param string|\Comely\Buffer\AbstractByteArray $script
+     * @return static
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
-    public static function Decode(AbstractBitcoinNode $node, string $serializedBase16Script): self
+    public static function Decode(Bitcoin $btc, string|AbstractByteArray $script): self
     {
-        return new self($node, self::DecodeAsString($serializedBase16Script));
+        if ($script instanceof AbstractByteArray) {
+            $script = static::Buffer2String($script);
+        }
+
+        return new self($btc, $script);
     }
 
     /**
-     * Script constructor.
-     * @param AbstractBitcoinNode $node
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      * @param string $script
-     * @throws ScriptParseException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
-    public function __construct(AbstractBitcoinNode $node, string $script)
+    private function __construct(
+        public readonly Bitcoin $btc,
+        string                  $script
+    )
     {
         if (!$script) {
             throw new ScriptParseException('OpCode script cannot be empty');
@@ -137,11 +122,9 @@ class Script
             throw new ScriptParseException('OpCode script contains illegal characters');
         }
 
-        $this->node = $node;
-        $this->raw = str_replace("OP_", "", strtoupper($script)); // Replace any "OP_" prefix
-        $this->buffer = new Base16();
+        $script = str_replace("OP_", "", strtoupper($script)); // Replace any "OP_" prefix
+        $buffer = new Buffer();
 
-        $script = $this->raw; // Uppercase, OP_ prefix already removed
         $blocks = explode(" ", $script);
         $index = -1;
         foreach ($blocks as $block) {
@@ -154,12 +137,19 @@ class Script
                 $len = intval(explode("(", $block[0])[1]);
                 if ($len < 1 || $len > 75) {
                     throw new ScriptParseException(
-                        sprintf('PUSHDATA length must be between 1 and 75 bytes, got %d', $len)
+                        sprintf('PUSHDATA length must be between 1 and 75 bytes, got %d', $len),
+                        $index
                     );
                 }
 
-                $this->buffer->append(dechex($len)); // This will also even number of hexits
-                $this->buffer->append($data);
+                if (strlen($data) % 2 !== 0) {
+                    throw new ScriptParseException('Base16 encoded PUSHDATA must be of even length', $index);
+                } elseif (strlen($data) * 2 !== $len) {
+                    throw new ScriptParseException('Expected PUSHDATA of %d hexits, got %d', $len, strlen($data));
+                }
+
+                $buffer->appendUInt8($len);
+                $buffer->append(hex2bin($data));
                 continue;
             }
 
@@ -168,96 +158,37 @@ class Script
                 $block = explode("[", substr($block, 0, -1));
                 $op = $block[0];
                 $data = $block[1];
-
                 switch ($op) {
                     case "PUSHDATA1":
-                        $this->buffer->append("4c"); // 0x4c
+                        $buffer->append(hex2bin("4c"));
                         break;
                     case "PUSHDATA2":
-                        $this->buffer->append("4d"); // 0x4d
+                        $buffer->append(hex2bin("4d"));
                         break;
                     case "PUSHDATA4":
-                        $this->buffer->append("4e"); // 0x4e
+                        $buffer->append(hex2bin("4e"));
                         break;
                     default:
-                        throw new ScriptParseException(
-                            sprintf('Invalid op code "%s"', $op)
-                        );
+                        throw new ScriptParseException(sprintf('Invalid op code "%s"', $op), $index);
                 }
 
-                $this->buffer->append($data);
+                $buffer->append($data);
                 continue;
             }
 
             // Other OP codes
             $opCode = OpCode::OP_CODES["OP_" . $block] ?? null;
             if (is_int($opCode) && $opCode >= 0) {
-                $this->buffer->append(dechex($opCode));
+                $buffer->appendUInt8($opCode);
                 continue;
             }
 
             // Unknown OpCode, throw exception
-            throw new ScriptParseException(sprintf('Unknown OpCode at index %d', $index));
+            throw new ScriptParseException(sprintf('Unknown OpCode at index %d', $index), $index);
         }
 
-        $this->hash160 = $this->buffer->binary()
-            ->hash()->sha256()// 1x SHA256
-            ->hash()->ripeMd160()// 1x RipeMD160
-            ->base16(); // Base16
-
-        $this->buffer->readOnly(true); // Set buffer in readOnly state
-        $this->hash160->readOnly(true); // Set hash160 in readOnly state
-    }
-
-    /**
-     * @return string
-     */
-    public function raw(): string
-    {
-        return $this->raw;
-    }
-
-    /**
-     * @return Base16
-     */
-    public function script(): Base16
-    {
-        return $this->buffer;
-    }
-
-    /**
-     * @return Base16
-     */
-    public function hash160(): Base16
-    {
-        return $this->hash160;
-    }
-
-    /**
-     * @return Base16
-     */
-    public function sha256(): Base16
-    {
-        return $this->buffer->copy()->binary()
-            ->hash()->sha256()
-            ->base16()->readOnly(true);
-    }
-
-    /**
-     * @return P2SH_Address
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
-     */
-    public function p2sh(): P2SH_Address
-    {
-        return $this->node->p2sh()->fromRedeemScript($this);
-    }
-
-    /**
-     * @return P2SH_Address
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
-     */
-    public function getP2SHAddress(): P2SH_Address
-    {
-        return $this->p2sh();
+        $this->script = $script;
+        $this->buffer = $buffer->readOnly();
+        $this->hash160 = $this->btc->network->hash160($this->buffer);
     }
 }
