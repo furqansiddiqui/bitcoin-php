@@ -82,7 +82,7 @@ class AddressFactory
      * @return \FurqanSiddiqui\Bitcoin\Address\AbstractPaymentAddress
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
      */
-    public function fromScript(Script $scriptPubKey): AbstractPaymentAddress
+    public function fromScriptPubKey(Script $scriptPubKey): AbstractPaymentAddress
     {
         $script16 = $scriptPubKey->buffer->toBase16();
         if (preg_match('/^76a914[a-f0-9]{40}88ac$/i', $script16)) {
