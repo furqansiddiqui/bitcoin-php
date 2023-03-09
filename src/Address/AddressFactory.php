@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,11 +14,11 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Address;
 
-use Comely\DataTypes\Buffer\Base16;
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use Comely\Buffer\BigInteger\LittleEndian;
+use Comely\Buffer\Buffer;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
-use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
 
 /**
  * Class AddressFactory
@@ -26,16 +26,11 @@ use FurqanSiddiqui\Bitcoin\Serialize\Base58Check;
  */
 class AddressFactory
 {
-    /** @var AbstractBitcoinNode */
-    private $node;
-
     /**
-     * MnemonicFactory constructor.
-     * @param AbstractBitcoinNode $node
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      */
-    public function __construct(AbstractBitcoinNode $node)
+    public function __construct(private readonly Bitcoin $btc)
     {
-        $this->node = $node;
     }
 
     /**
@@ -45,7 +40,7 @@ class AddressFactory
      */
     public function p2pkh(string $address): P2PKH_Address
     {
-        return new P2PKH_Address($this->node, $address);
+        return new P2PKH_Address($this->btc, $address);
     }
 
     /**
@@ -55,63 +50,49 @@ class AddressFactory
      */
     public function p2sh(string $address): P2SH_Address
     {
-        return new P2SH_Address($this->node, $address);
+        return new P2SH_Address($this->btc, $address);
     }
 
     /**
      * @param string $address
-     * @return PaymentAddressInterface
-     * @throws PaymentAddressException
+     * @return \FurqanSiddiqui\Bitcoin\Address\AbstractPaymentAddress
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
      */
-    public function address(string $address): PaymentAddressInterface
+    public function address(string $address): AbstractPaymentAddress
     {
-        $base58Check = Base58Check::getInstance();
-        $decodedAddress = $base58Check->decode($address);
-        $decodedAddressHexits = $decodedAddress->hexits();
-        $decodedAddressPrefix = hexdec(substr($decodedAddressHexits, 0, 2));
-
-        // P2PKH
-        $p2pkhPrefix = $this->node->const_p2pkh_prefix;
-        if (is_int($p2pkhPrefix) && $decodedAddressPrefix === $p2pkhPrefix) {
-            return new P2PKH_Address($this->node, $address);
+        // Could be a Base58 check address?
+        try {
+            $decoded = $this->btc->bip32->base58->checkDecode($address);
+            $prefix = gmp_intval(LittleEndian::GMP_Unpack($decoded->pop(1, changeBuffer: false)));
+            if ($prefix === $this->btc->network->p2pkh_prefix) {
+                return new P2PKH_Address($this->btc, $address);
+            } elseif ($prefix === $this->btc->network->p2sh_prefix) {
+                return new P2SH_Address($this->btc, $address);
+            }
+        } catch (\Exception) {
         }
 
-        // P2SH
-        $p2shPrefix = $this->node->const_p2sh_prefix;
-        if (is_int($p2shPrefix) && $decodedAddressPrefix === $p2shPrefix) {
-            return new P2SH_Address($this->node, $address);
-        }
+        // Todo: Bech32
 
-        throw new PaymentAddressException('Could not identify given address as P2PKH/P2SH');
+        throw new PaymentAddressException('Could not identify given address as P2PKH/P2SH/Bech32');
     }
 
     /**
-     * @param Script $scriptPubKey
-     * @return PaymentAddressInterface
-     * @throws PaymentAddressException
+     * @param \FurqanSiddiqui\Bitcoin\Script\Script $scriptPubKey
+     * @return \FurqanSiddiqui\Bitcoin\Address\AbstractPaymentAddress
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
      */
-    public function fromScript(Script $scriptPubKey): PaymentAddressInterface
+    public function fromScript(Script $scriptPubKey): AbstractPaymentAddress
     {
-        return $this->addressFromScript($scriptPubKey);
-    }
-
-    /**
-     * @param Script $scriptPubKey
-     * @return PaymentAddressInterface
-     * @throws PaymentAddressException
-     */
-    public function addressFromScript(Script $scriptPubKey): PaymentAddressInterface
-    {
-        $base58Check = Base58Check::getInstance();
-        $scriptHex = $scriptPubKey->script()->hexits(false);
-        if (preg_match('/^76a914[a-f0-9]{40}88ac$/i', $scriptHex)) {
-            $hash160 = new Base16(substr($scriptHex, 6, 40));
-            $hash160->prepend(dechex($this->node->const_p2pkh_prefix));
-            return $this->p2pkh($base58Check->encode($hash160)->value());
-        } elseif (preg_match('/^a914[a-f0-9]{40}87$/i', $scriptHex)) {
-            $hash160 = new Base16(substr($scriptHex, 4, 40));
-            $hash160->prepend(dechex($this->node->const_p2sh_prefix));
-            return $this->p2sh($base58Check->encode($hash160)->value());
+        $script16 = $scriptPubKey->buffer->toBase16();
+        if (preg_match('/^76a914[a-f0-9]{40}88ac$/i', $script16)) {
+            $raw = new Buffer(hex2bin(substr($script16, 6, 40)));
+            $raw->prependUInt8($this->btc->network->p2pkh_prefix);
+            return $this->p2pkh($this->btc->bip32->base58->checkEncode($raw));
+        } elseif (preg_match('/^a914[a-f0-9]{40}87$/i', $script16)) {
+            $raw = new Buffer(hex2bin(substr($script16, 4, 40)));
+            $raw->prependUInt8($this->btc->network->p2sh_prefix);
+            return $this->p2sh($this->btc->bip32->base58->checkEncode($raw));
         }
 
         throw new PaymentAddressException('Could not identify given ScriptPubKey as P2PKH/P2SH');
