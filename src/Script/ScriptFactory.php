@@ -40,10 +40,22 @@ class ScriptFactory
     }
 
     /**
-     * @param PublicKey $pubKey1
-     * @param PublicKey $pubKey2
-     * @param PublicKey $pubKey3
-     * @return MultiSigScript
+     * @param string|\Comely\Buffer\AbstractByteArray $script
+     * @return \FurqanSiddiqui\Bitcoin\Script\Script
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function parse(string|AbstractByteArray $script): Script
+    {
+        return Script::Decode($this->btc, $script);
+    }
+
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey $pubKey1
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey $pubKey2
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey $pubKey3
+     * @return \FurqanSiddiqui\Bitcoin\Script\MultiSigScript
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
     public function multiSig2of3(PublicKey $pubKey1, PublicKey $pubKey2, PublicKey $pubKey3): MultiSigScript
@@ -53,23 +65,13 @@ class ScriptFactory
 
     /**
      * @param int $signaturesRequired
-     * @param PublicKey ...$publicKeys
-     * @return MultiSigScript
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey ...$publicKeys
+     * @return \FurqanSiddiqui\Bitcoin\Script\MultiSigScript
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      */
     public function multiSig(int $signaturesRequired, PublicKey ...$publicKeys): MultiSigScript
     {
         return new MultiSigScript($this->btc, $signaturesRequired, ...$publicKeys);
-    }
-
-    /**
-     * @param string|\Comely\Buffer\AbstractByteArray $script
-     * @return \FurqanSiddiqui\Bitcoin\Script\Script
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
-     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
-     */
-    public function script(string|AbstractByteArray $script): Script
-    {
-        return Script::Decode($this->btc, $script);
     }
 }
