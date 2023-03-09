@@ -97,4 +97,16 @@ class AddressFactory
 
         throw new PaymentAddressException('Could not identify given ScriptPubKey as P2PKH/P2SH');
     }
+
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Script\Script $redeemScript
+     * @return \FurqanSiddiqui\Bitcoin\Address\P2SH_Address
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
+    public function fromRedeemScript(Script $redeemScript): P2SH_Address
+    {
+        $raw = $redeemScript->buffer->copy()
+            ->prependUInt8($this->btc->network->p2sh_prefix);
+        return new P2SH_Address($this->btc, $this->btc->bip32->base58->checkEncode($raw));
+    }
 }
