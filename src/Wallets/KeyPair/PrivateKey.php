@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,12 +14,9 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
-use Comely\DataTypes\Buffer\Base16;
-use FurqanSiddiqui\BIP32\Extend\ExtendedKeyInterface;
-use FurqanSiddiqui\BIP32\Extend\PublicKeyInterface;
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
-use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey\Export;
-use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey\Signer;
+use Comely\Buffer\Buffer;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
+use FurqanSiddiqui\ECDSA\KeyPair;
 
 /**
  * Class PrivateKey
@@ -27,60 +24,27 @@ use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey\Signer;
  */
 class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
 {
-    /** @var AbstractBitcoinNode */
-    private $node;
-
     /**
-     * PrivateKey constructor.
-     * @param AbstractBitcoinNode $node
-     * @param Base16 $entropy
-     * @param ExtendedKeyInterface|null $extendedKey
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
+     * @param \FurqanSiddiqui\ECDSA\KeyPair $eccPrivateKey
      */
-    public function __construct(AbstractBitcoinNode $node, Base16 $entropy, ?ExtendedKeyInterface $extendedKey = null)
+    public function __construct(
+        public readonly Bitcoin $btc,
+        KeyPair                 $eccPrivateKey,
+    )
     {
-        $this->node = $node;
-        parent::__construct($entropy, $extendedKey);
-
-        // Configure ECDSA Curve
-        if (!$extendedKey && $this->node->const_ecdsa_curve) {
-            $this->set("curve", $this->node->const_ecdsa_curve);
-        }
+        parent::__construct($this->btc->bip32, $eccPrivateKey);
     }
 
     /**
-     * @return AbstractBitcoinNode
+     * @return string
      */
-    public function node(): AbstractBitcoinNode
+    public function exportWIF(): string
     {
-        return $this->node;
-    }
+        $raw = (new Buffer($this->eccPrivateKey->private->raw()))
+            ->append("\01") // Compressed Public Key Flag
+            ->prependUInt8($this->btc->network->wif_prefix); // Network prefix
 
-    /**
-     * @return PublicKey
-     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
-     */
-    public function publicKey(): PublicKeyInterface
-    {
-        if (!$this->publicKey instanceof PublicKey) {
-            $this->publicKey = new PublicKey($this->node, $this);
-        }
-
-        return $this->publicKey;
-    }
-
-    /**
-     * @return Signer
-     */
-    public function sign(): Signer
-    {
-        return new Signer($this);
-    }
-
-    /**
-     * @return Export
-     */
-    public function export(): Export
-    {
-        return new Export($this);
+        return $this->btc->base58()->checkEncode($raw);
     }
 }
