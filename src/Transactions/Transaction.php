@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,87 +14,51 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions;
 
-use Comely\DataTypes\Buffer\Base16;
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use Comely\Buffer\BigInteger\LittleEndian;
+use Comely\Buffer\Buffer;
+use Comely\Buffer\Bytes32;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException;
 use FurqanSiddiqui\Bitcoin\Protocol\VarInt;
 use FurqanSiddiqui\Bitcoin\Script\MultiSigScript;
 use FurqanSiddiqui\Bitcoin\Script\Script;
-use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInput;
-use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxInputs;
-use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxOutput;
-use FurqanSiddiqui\Bitcoin\Transactions\Transaction\TxOutputs;
-use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
+use FurqanSiddiqui\Bitcoin\Transactions\UTXO\TxInput;
+use FurqanSiddiqui\Bitcoin\Transactions\UTXO\TxOutput;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair;
 
 /**
  * Class Transaction
  * @package FurqanSiddiqui\Bitcoin\Transactions
- * @property-read Base16 $verUInt32LE
- * @property-read Base16 $lockTimeUInt32LE
- * @property-read AbstractBitcoinNode $network
- * @property-read bool $isSegWit
  */
 class Transaction
 {
-    public const VALID_VERSIONS = [1, 2];
-
-    /** @var AbstractBitcoinNode */
-    private $network;
-    /** @var int */
-    private $version;
-    /** @var TxInputs */
-    private $inputs;
-    /** @var TxOutputs */
-    private $outputs;
-    /** @var int */
-    private $lockTime;
-    /** @var bool */
-    private $isSegWit;
+    private array $inputs = [];
+    private array $outputs = [];
 
     /**
-     * @param AbstractBitcoinNode $network
-     * @param Base16 $encodedTx
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $network
+     * @param \Comely\Buffer\Buffer $rawTx
      * @return static
      * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionDecodeException
      */
-    public static function Decode(AbstractBitcoinNode $network, Base16 $encodedTx): self
+    public static function Decode(Bitcoin $network, Buffer $rawTx): static
     {
-        return RawTransactionDecoder::Decode($network, $encodedTx);
+        return RawTransactionDecoder::Decode($network, $rawTx);
     }
 
     /**
-     * Transaction constructor.
-     * @param AbstractBitcoinNode $network
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
+     * @param int $version
+     * @param int $lockTime
+     * @param bool $isSegWit
      */
-    public function __construct(AbstractBitcoinNode $network)
+    public function __construct(
+        public readonly Bitcoin $btc,
+        public int              $version = 1,
+        public int              $lockTime = 0,
+        public bool             $isSegWit = false
+    )
     {
-        $this->network = $network;
-        $this->version = 1;
-        $this->inputs = new TxInputs($this);
-        $this->outputs = new TxOutputs($this);
-        $this->lockTime = 0;
-        $this->isSegWit = false;
-    }
-
-    /**
-     * @param $prop
-     * @return mixed
-     */
-    public function __get($prop)
-    {
-        switch ($prop) {
-            case "verUInt32LE":
-                $uInt32LE = bin2hex(pack("V", $this->version));
-                return new Base16($uInt32LE);
-            case "lockTimeUInt32LE":
-                $uInt32LE = bin2hex(pack("V", $this->lockTime));
-                return new Base16($uInt32LE);
-            case "network":
-            case "isSegWit":
-                return $this->$prop;
-        }
-
-        throw new \OutOfBoundsException('Cannot get value of inaccessible property');
     }
 
     /**
@@ -111,107 +75,93 @@ class Transaction
     public function dump(): array
     {
         $txSize = $this->size();
-        return [
+        $dump = [
             "version" => [
                 "dec" => $this->version,
-                "uInt32LE" => $this->verUInt32LE->hexits(false),
+                "uInt32LE" => bin2hex(LittleEndian::PackUInt32($this->version)),
             ],
             "size" => [
                 "bytes" => $txSize->size,
                 "weight" => $txSize->weight
             ],
             "isSegWit" => $this->isSegWit,
-            "inputs" => $this->inputs()->dump(),
-            "outputs" => $this->outputs->dump(),
+            "inputs" => [],
+            "outputs" => [],
             "lockTime" => [
                 "dec" => $this->lockTime,
-                "uInt32LE" => $this->lockTimeUInt32LE->hexits(false)
+                "uInt32LE" => bin2hex(LittleEndian::PackUInt32($this->lockTime))
             ]
         ];
-    }
 
-    /**
-     * @param int $version
-     * @return Transaction
-     */
-    public function setVersion(int $version): self
-    {
-        if ($version < 0 || $version > 0xffffffff) {
-            throw new \InvalidArgumentException('Invalid transaction version');
+        /** @var TxInput $input */
+        foreach ($this->inputs as $input) {
+            $dump["inputs"][] = $input->dump();
         }
 
-        $this->version = $version;
-        return $this;
+        /** @var TxOutput $input */
+        foreach ($this->outputs as $output) {
+            $dump["outputs"][] = $output->dump();
+        }
+
+        return $dump;
     }
 
     /**
-     * @return $this
+     * @return array
      */
-    public function isSegWit(): self
-    {
-        $this->isSegWit = true;
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function version(): int
-    {
-        return $this->version;
-    }
-
-    /**
-     * @return TxInputs
-     */
-    public function inputs(): TxInputs
+    public function getInputs(): array
     {
         return $this->inputs;
     }
 
     /**
-     * @return TxOutputs
+     * @param \Comely\Buffer\Bytes32 $prevTxHash
+     * @param int $index
+     * @param \FurqanSiddiqui\Bitcoin\Script\Script|null $scriptPubKey
+     * @param int $seq
+     * @param int $value
+     * @return \FurqanSiddiqui\Bitcoin\Transactions\UTXO\TxInput
      */
-    public function outputs(): TxOutputs
+    public function appendInput(Bytes32 $prevTxHash, int $index, ?Script $scriptPubKey, int $seq = 0xffffffff, int $value = 0): TxInput
+    {
+        $txI = new TxInput($this, $prevTxHash, $index, $scriptPubKey, $seq, $value);
+        $this->inputs[] = $txI;
+        return $txI;
+    }
+
+    /**
+     * @return array
+     */
+    public function getOutputs(): array
     {
         return $this->outputs;
     }
 
     /**
-     * @param int $lockTime
-     * @return Transaction
+     * @param \FurqanSiddiqui\Bitcoin\Script\Script $scriptPubKey
+     * @param int $value
+     * @return \FurqanSiddiqui\Bitcoin\Transactions\UTXO\TxOutput
      */
-    public function setLockTime(int $lockTime): self
+    public function appendOutput(Script $scriptPubKey, int $value): TxOutput
     {
-        if ($lockTime < 0) {
-            throw new \InvalidArgumentException('Invalid transaction lock time');
-        }
-
-        $this->lockTime = $lockTime;
-        return $this;
+        $txO = new TxOutput($this, $scriptPubKey, $value);
+        $this->outputs[] = $txO;
+        return $txO;
     }
 
     /**
-     * @return int
+     * @return \FurqanSiddiqui\Bitcoin\Transactions\TxSize
      */
-    public function lockTime(): int
-    {
-        return $this->lockTime;
-    }
-
-    /**
-     * @return TransactionSize
-     */
-    public function size(): TransactionSize
+    public function size(): TxSize
     {
         $totalSize = 10; // 4 byte version, 2x 1 byte input and output counts, 4 byte lockTime
         /** @var TxInput $input */
-        foreach ($this->inputs->all() as $input) {
+        foreach ($this->inputs as $input) {
             $totalSize += $input->sizeInBytes();
         }
 
         /** @var TxOutput $output */
-        foreach ($this->outputs->all() as $output) {
+        foreach ($this->outputs as $output) {
             $totalSize += $output->sizeInBytes();
         }
 
@@ -219,60 +169,58 @@ class Transaction
             $totalSize += 2; // 2 byte SegWit flag
         }
 
-        $txSize = new TransactionSize();
-        $txSize->size = $totalSize;
-        $txSize->weight = $this->isSegWit ? $totalSize : $totalSize * 4;
-        return $txSize;
+        return new TxSize($totalSize, $this->isSegWit ? $totalSize : $totalSize * 4);
     }
 
     /**
      * @param int $inputIndex
-     * @return SerializedTransaction
-     * @throws TransactionInputSignException
+     * @return \FurqanSiddiqui\Bitcoin\Transactions\SerializedTransaction
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException
      */
     public function hashPreImage(int $inputIndex): SerializedTransaction
     {
-        $preImage = new Base16();
-        $hashPrevOuts = new Base16();
-        $hashSequences = new Base16();
-        $hashOutputs = new Base16();
+        $preImage = new Buffer();
+        $hashPrevOuts = new Buffer();
+        $hashSequences = new Buffer();
+        $hashOutputs = new Buffer();
         $signingInput = null;
 
         // Add 4 byte version
-        $preImage->append($this->verUInt32LE);
+        $preImage->appendUInt32LE($this->version);
         // Append number of inputs
-        $preImage->append(VarInt::Encode($this->inputs->count()));
+        $preImage->append(VarInt::Int2Bin(count($this->inputs)));
         // Append Inputs
         $inputNum = -1;
         /** @var TxInput $input */
-        foreach ($this->inputs->all() as $input) {
+        foreach ($this->inputs as $input) {
             $inputNum++;
             if (!$signingInput && $inputNum === $inputIndex) {
                 $signingInput = $input;
             }
 
             // Reverse byte order
-            $prevTxHashRev = implode("", array_reverse(str_split($input->prevTxHash()->hexits(false), 2)));
+            $prevTxHashRev = implode("", array_reverse(str_split($input->prevTxHash->raw(), 1)));
             $preImage->append($prevTxHashRev);
             // 4-byte output index
-            $preImage->append($input->indexUInt32LE);
+            $preImage->appendUInt32LE($input->index);
             // ScriptCode or 0x00
             $inputScriptCode = $inputNum === $inputIndex ? $input->getScriptCode() : null;
             if ($inputScriptCode) {
-                $inputScriptCode = $inputScriptCode->script();
-                $preImage->append(VarInt::Encode($inputScriptCode->binary()->sizeInBytes));
-                $preImage->append($inputScriptCode);
+                $preImage->append(VarInt::Int2Bin($inputScriptCode->buffer->len()));
+                $preImage->append($inputScriptCode->buffer);
             } else {
-                $preImage->append("00"); // NULL scriptSig or 0x00
+                $preImage->append("\0"); // NULL scriptSig or 0x00
             }
+
             // 4-byte Sequence Number
-            $preImage->append($input->seqUInt32LE);
+            $preImage->appendUInt32LE($input->seqNo);
 
             // Append hashPrevOuts and hashSequences
-            $hashPrevOuts->append($prevTxHashRev);
-            $hashPrevOuts->append($input->indexUInt32LE);
-            $hashSequences->append($input->seqUInt32LE);
+            $hashPrevOuts->append($prevTxHashRev)
+                ->appendUInt32LE($input->index);
+            $hashSequences->appendUInt32LE($input->seqNo);
 
             // Input done!
             unset($input, $inputScriptCode);
@@ -290,68 +238,62 @@ class Transaction
         }
 
         // Finally, Tx lock time! 4 byte
-        $preImage->append($this->lockTimeUInt32LE);
+        $preImage->appendUInt32LE($this->lockTime);
         // 4-byte Hash code type
-        $preImage->append("01000000");
-        // Set buffer state as readOnly
-        $preImage->readOnly(true);
-        // Calculate TxHash
-        $hash = $preImage->binary()->hash()->sha256()
-            ->hash()->sha256(); // SHA256 twice
+        $preImage->append("\1\0\0\0");
 
-        return new SerializedTransaction($preImage, $hash->base16(), false);
+        // Set buffer state as readOnly
+        $preImage->readOnly();
+
+        return new SerializedTransaction($this->btc, $preImage, false);
     }
 
     /**
-     * @param TxInput $input
-     * @param Base16 $prevOuts
-     * @param Base16 $prevSeq
-     * @param Base16 $outputs
-     * @return Base16
-     * @throws TransactionInputSignException
+     * @param \FurqanSiddiqui\Bitcoin\Transactions\UTXO\TxInput $input
+     * @param \Comely\Buffer\Buffer $prevOuts
+     * @param \Comely\Buffer\Buffer $prevSeq
+     * @param \Comely\Buffer\Buffer $outputs
+     * @return \Comely\Buffer\Buffer
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException
      */
-    private function hashPreImageSegWit(TxInput $input, Base16 $prevOuts, Base16 $prevSeq, Base16 $outputs): Base16
+    private function hashPreImageSegWit(TxInput $input, Buffer $prevOuts, Buffer $prevSeq, Buffer $outputs): Buffer
     {
-        $segWitInput = new Base16();
-        $inputHashShort = sprintf("%s-%d", substr($input->prevTxHash()->hexits(), 0, 8), $input->index());
+        $segWitInput = new Buffer();
+        $inputHashShort = sprintf("%s-%d", substr($input->prevTxHash->toBase16(), 0, 8), $input->index);
 
         // Convert all argument buffers into hashes
-        $prevOutsHash = $prevOuts->binary()->hash()->sha256()
-            ->hash()->sha256()
-            ->base16();
-        $prevSeqHash = $prevSeq->binary()->hash()->sha256()
-            ->hash()->sha256()
-            ->base16();
-        $outputsHash = $outputs->binary()->hash()->sha256()
-            ->hash()->sha256()
-            ->base16();
+        $prevOutsHash = $this->btc->network->d_hash256($prevOuts);
+        $prevSeqHash = $this->btc->network->d_hash256($prevSeq);
+        $outputsHash = $this->btc->network->d_hash256($outputs);
 
         // Add 4 byte version
-        $segWitInput->append($this->verUInt32LE);
+        $segWitInput->appendUInt32LE($this->version);
         // Append hashPrevOuts
         $segWitInput->append($prevOutsHash);
         // Append hashSequence
         $segWitInput->append($prevSeqHash);
         // Outpoint
-        $segWitInput->append(implode("", array_reverse(str_split($input->prevTxHash()->hexits(false), 2))));
-        $segWitInput->append($input->indexUInt32LE);
+        $segWitInput->append(implode("", array_reverse(str_split($input->prevTxHash->toBase16(), 1))));
+        $segWitInput->appendUInt32LE($input->index);
+
         // ScriptCode
         $scriptCode = null;
         if ($input->redeemScriptType === "p2sh-p2wpkh") {
             // P2SH-P2WPKH
-            $redeemScriptHash = substr($input->getRedeemScript()->script()->hexits(false), 4, 40);
-            $scriptCode = $this->network->script()->new()
+            $redeemScriptHash = substr($input->getRedeemScript()->buffer->raw(), 2, 20);
+            $scriptCode = $this->btc->scripts->new()
                 ->OP_DUP()
                 ->OP_HASH160()
-                ->PUSHDATA((new Base16($redeemScriptHash))->binary())
+                ->PUSHDATA(new Buffer($redeemScriptHash))
                 ->OP_EQUALVERIFY()
                 ->OP_CHECKSIG()
-                ->script();
+                ->getScript();
         } elseif ($input->redeemScriptType === "p2sh-p2wsh") {
             $signingMethod = $input->getSigningMethod();
             if ($signingMethod instanceof MultiSigScript) {
-                $scriptCode = $signingMethod->redeemScript();
+                $scriptCode = $signingMethod->redeemScript;
             } else {
                 $scriptCode = $input->getRedeemScript();
             }
@@ -363,20 +305,13 @@ class Transaction
             );
         }
 
-        $scriptCode = $scriptCode->script();
-        $segWitInput->append(VarInt::Encode($scriptCode->binary()->sizeInBytes));
-        $segWitInput->append($scriptCode);
+        $segWitInput->append(VarInt::Int2Bin($scriptCode->buffer->len()));
+        $segWitInput->append($scriptCode->buffer);
 
-        // Value/Amount
-        if (!is_int($input->value)) {
-            throw new TransactionInputSignException(
-                sprintf('SegWith hashPreImage for requires amount/value for input "%s"', $inputHashShort)
-            );
-        }
-
-        $segWitInput->append($input->valueUInt64LE);
+        // Value
+        $segWitInput->appendUInt64LE($input->value);
         // Sequence
-        $segWitInput->append($input->seqUInt32LE);
+        $segWitInput->appendUInt32LE($input->seqNo);
         // Append HashOutputs
         $segWitInput->append($outputsHash);
 
@@ -384,77 +319,79 @@ class Transaction
     }
 
     /**
-     * @return SerializedTransaction
-     * @throws TransactionInputSignException
-     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @return \FurqanSiddiqui\Bitcoin\Transactions\SerializedTransaction
+     * @throws \FurqanSiddiqui\BIP32\Exception\KeyPairException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\SignatureException
      */
     public function sign(): SerializedTransaction
     {
-        $serialized = new Base16();
+        $serialized = new Buffer();
 
         // Add 4 byte version
-        $serialized->append($this->verUInt32LE);
+        $serialized->appendUInt32LE($this->version);
 
         // Is segWit?
         if ($this->isSegWit) {
-            $serialized->append("0001"); // 2 byte SegWit flag
+            $serialized->append("\0\1"); // 2 byte SegWit flag
         }
 
         // Append number of inputs
-        $serialized->append(VarInt::Encode($this->inputs->count()));
+        $serialized->append(VarInt::Int2Bin(count($this->inputs)));
 
         // Append Inputs
         $inputNum = -1;
         /** @var TxInput $input */
-        foreach ($this->inputs->all() as $input) {
+        foreach ($this->inputs as $input) {
             $inputNum++;
             // Reverse byte order
-            $prevTxHashRev = implode("", array_reverse(str_split($input->prevTxHash()->hexits(false), 2)));
+            $prevTxHashRev = implode("", array_reverse(str_split($input->prevTxHash->raw(), 1)));
             $serialized->append($prevTxHashRev);
             // 4-byte output index
-            $serialized->append($input->indexUInt32LE);
+            $serialized->appendUInt32LE($input->index);
             // ScriptSig or 00
             $scriptSig = null;
             $inputScriptSigMethod = $input->getSigningMethod();
             if ($inputScriptSigMethod instanceof Script) {
                 // Pre-defined scriptSig
                 $scriptSig = $inputScriptSigMethod;
-            } elseif ($inputScriptSigMethod instanceof PrivateKey) {
+            } elseif ($inputScriptSigMethod instanceof BaseKeyPair) {
                 // Sign with private key
-                $signature = $inputScriptSigMethod->sign()->transaction($this->hashPreImage($inputNum));
-                $scriptSig = $input->createScriptSig($signature, $inputScriptSigMethod->publicKey());
+                $signature = $inputScriptSigMethod->privateKey()->signTransaction($this->hashPreImage($inputNum));
+                $scriptSig = $input->createScriptSig($signature->getBitcoinSignature(), $inputScriptSigMethod->publicKey());
             } elseif ($inputScriptSigMethod instanceof MultiSigScript) {
                 // Take signatures from MultiSigScript object
-                $signatures = $inputScriptSigMethod->getSignatures($this, $inputNum);
+                $signatures = $inputScriptSigMethod->signTransaction($this, $inputNum);
                 if (!$signatures) {
                     throw new TransactionInputSignException('There are no private keys in MultiSigScript object');
                 }
 
                 if ($input->redeemScriptType === "p2sh-p2wsh") { // SegWit
-                    $scriptSig = $this->network->script()->new()
-                        ->PUSHDATA($input->getRedeemScript()->script()->binary())
-                        ->script();
+                    $scriptSig = $this->btc->scripts->new()
+                        ->PUSHDATA($input->getRedeemScript()->buffer)
+                        ->getScript();
 
                     // Witness Data
-                    $input->setWitnessData(new Base16());
+                    $input->setWitnessData(new Buffer());
 
-                    /** @var Base16 $signature */
+                    /** @var Buffer $signature */
                     foreach ($signatures as $signature) {
                         $input->setWitnessData($signature);
                     }
 
-                    $input->setWitnessData($inputScriptSigMethod->redeemScript()->script());
+                    $input->setWitnessData($inputScriptSigMethod->redeemScript->buffer);
                 } else { // Legacy
-                    $scriptCode = $this->network->script()->new()
+                    $scriptCode = $this->btc->scripts->new()
                         ->OP_0();
-                    /** @var Base16 $signature */
+                    /** @var Buffer $signature */
                     foreach ($signatures as $signature) {
-                        $scriptCode->PUSHDATA($signature->binary());
+                        $scriptCode->PUSHDATA($signature);
                     }
 
-                    $scriptCode->PUSHDATA($inputScriptSigMethod->redeemScript()->script()->binary());
-                    $scriptSig = $scriptCode->script();
+                    $scriptCode->PUSHDATA($inputScriptSigMethod->redeemScript->buffer);
+                    $scriptSig = $scriptCode->getScript();
                 }
 
                 $input->setScriptSig($scriptSig);
@@ -467,18 +404,17 @@ class Transaction
                 );
             }
 
-            $scriptSig = $scriptSig->script();
-            $serialized->append(VarInt::Encode($scriptSig->binary()->sizeInBytes));
-            $serialized->append($scriptSig);
+            $serialized->append(VarInt::Int2Bin($scriptSig->buffer->len()));
+            $serialized->append($scriptSig->buffer);
 
             // 4-byte Sequence Number
-            $serialized->append($input->seqUInt32LE);
+            $serialized->appendUInt32LE($input->seqNo);
             // Input done!
             unset($input, $inputScriptSigMethod, $scriptSig);
         }
 
         // Outputs
-        if ($this->outputs->count() < 1) {
+        if (count($this->outputs) < 1) {
             throw new \UnexpectedValueException('Transaction has no outputs');
         }
 
@@ -487,21 +423,14 @@ class Transaction
 
         // SegWit?
         if ($this->isSegWit) {
-            $segWitInputNo = 0;
             /** @var TxInput $input */
-            foreach ($this->inputs->all() as $input) {
-                $segWitInputNo++;
-                $inputWitnessFields = $input->getSegWitData();
-                if (!$inputWitnessFields) {
-                    $inputWitnessFields = [];
-                }
-
-                $serialized->append(VarInt::Encode(count($inputWitnessFields)));
-                /** @var Base16 $inWitnessElem */
+            foreach ($this->inputs as $input) {
+                $inputWitnessFields = $input->getWitnessData();
+                $serialized->append(VarInt::Int2Bin(count($inputWitnessFields)));
+                /** @var Buffer $inWitnessElem */
                 foreach ($inputWitnessFields as $inWitnessElem) {
-                    $inWitnessElemLen = $inWitnessElem->binary()->size()->bytes();
-                    $serialized->append(VarInt::Encode($inWitnessElemLen));
-                    if($inWitnessElemLen) {
+                    $serialized->append(VarInt::Int2Bin($inWitnessElem->len()));
+                    if ($inWitnessElem->len()) {
                         $serialized->append($inWitnessElem);
                     }
                 }
@@ -511,44 +440,37 @@ class Transaction
         }
 
         // Finally, Tx lock time! 4 byte
-        $serialized->append($this->lockTimeUInt32LE);
+        $serialized->appendUInt32LE($this->lockTime);
 
         // Set buffer state as readOnly
-        $serialized->readOnly(true);
+        $serialized->readOnly();
 
-        // Calculate TxHash
-        $hash = $serialized->binary()->hash()->sha256()
-            ->hash()->sha256(); // SHA256 twice
-
-        return new SerializedTransaction($serialized, $hash->base16(), true);
+        return new SerializedTransaction($this->btc, $serialized, true);
     }
 
     /**
-     * @param Base16 $buffer
-     * @param Base16|null $hashOutputsBuffer
+     * @param \Comely\Buffer\Buffer $buffer
+     * @param \Comely\Buffer\Buffer|null $hashOutputsBuffer
+     * @return void
      */
-    private function serializeBufferAppendOutputs(Base16 $buffer, ?Base16 $hashOutputsBuffer = null): void
+    private function serializeBufferAppendOutputs(Buffer $buffer, ?Buffer $hashOutputsBuffer = null): void
     {
         // Append number of outputs
-        $buffer->append(VarInt::Encode($this->outputs->count()));
-        // Append Outputs
-        $outputNum = -1;
+        $buffer->append(VarInt::Int2Bin(count($this->outputs)));
+
         /** @var TxOutput $output */
-        foreach ($this->outputs->all() as $output) {
-            $outputNum++;
+        foreach ($this->outputs as $output) {
             // 8-byte output amount
-            $buffer->append($output->valueUInt64LE);
+            $buffer->appendUInt64LE($output->value);
             // Output ScriptPubKey
-            $outputPubKey = $output->scriptPubKey()->script();
-            $outputPubKeyLen = VarInt::Encode($outputPubKey->binary()->sizeInBytes);
+            $outputPubKeyLen = VarInt::Int2Bin($output->scriptPubKey->buffer->len());
             $buffer->append($outputPubKeyLen);
-            $buffer->append($outputPubKey);
+            $buffer->append($output->scriptPubKey->buffer);
             // hashOutputs buffer?
-            if ($hashOutputsBuffer) {
-                $hashOutputsBuffer->append($output->valueUInt64LE);
-                $hashOutputsBuffer->append($outputPubKeyLen);
-                $hashOutputsBuffer->append($outputPubKey);
-            }
+            $hashOutputsBuffer?->appendUInt64LE($output->value)
+                ->append($outputPubKeyLen)
+                ->append($output->scriptPubKey->buffer);
+
             unset($output, $outputPubKey);
         }
     }

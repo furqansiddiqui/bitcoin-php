@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -15,13 +15,19 @@ declare(strict_types=1);
 namespace FurqanSiddiqui\Bitcoin\Transactions;
 
 /**
- * Class TransactionSize
+ * Class TxSize
  * @package FurqanSiddiqui\Bitcoin\Transactions
  */
-class TransactionSize
+class TxSize
 {
-    /** @var int */
-    public $size;
-    /** @var int */
-    public $weight;
+    /**
+     * @param int $size
+     * @param int $weight
+     */
+    public function __construct(
+        public readonly int $size,
+        public readonly int $weight
+    )
+    {
+    }
 }

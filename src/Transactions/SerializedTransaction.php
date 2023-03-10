@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions;
 
-use Comely\DataTypes\Buffer\Base16;
+use Comely\Buffer\Buffer;
+use Comely\Buffer\Bytes32;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 
 /**
  * Class SerializedTransaction
@@ -22,62 +24,19 @@ use Comely\DataTypes\Buffer\Base16;
  */
 class SerializedTransaction
 {
-    /** @var Base16 */
-    private $serializedBase16;
-    /** @var Base16 */
-    private $hash;
-    /** @var null|bool */
-    private $isSigned;
+    public readonly Bytes32 $hash;
 
     /**
-     * SerializedTransaction constructor.
-     * @param Base16 $serializedTxBase16
-     * @param Base16|null $hash
-     * @param bool|null $isSigned
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
+     * @param \Comely\Buffer\Buffer $rawTx
+     * @param bool $isSigned
      */
-    public function __construct(Base16 $serializedTxBase16, ?Base16 $hash = null, ?bool $isSigned = null)
+    public function __construct(
+        Bitcoin                $btc,
+        public readonly Buffer $rawTx,
+        public readonly bool   $isSigned = false
+    )
     {
-        $this->serializedBase16 = $serializedTxBase16->readOnly(true);
-        $this->isSigned = $isSigned;
-
-        // Calculate hash
-        $this->hash = $this->serializedBase16->binary()
-            ->hash()->sha256()
-            ->hash()->sha256()// SHA256 twice
-            ->base16();
-
-        // Compare hash?
-        if ($hash) {
-            if (!$this->hash->equals($hash)) {
-                throw new \UnexpectedValueException('Serialized tx hash does not match with given arg hash');
-            }
-        }
-    }
-
-    /**
-     * Is transaction signed? NULL indicates that we do not know, boolean indicates if TX is signed or not
-     * @return bool|null
-     */
-    public function isSigned(): ?bool
-    {
-        return $this->isSigned;
-    }
-
-    /**
-     * Get serialized transaction as Base16
-     * @return Base16
-     */
-    public function get(): Base16
-    {
-        return $this->serializedBase16;
-    }
-
-    /**
-     * Get hash of serialized transaction, this hash is signed with private key (if necessary)
-     * @return Base16
-     */
-    public function hash(): Base16
-    {
-        return $this->hash;
+        $this->hash = $btc->network->d_hash256($this->rawTx);
     }
 }

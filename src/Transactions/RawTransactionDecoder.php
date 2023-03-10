@@ -21,7 +21,6 @@ use Comely\Buffer\Exception\ByteReaderUnderflowException;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\ScriptException;
 use FurqanSiddiqui\Bitcoin\Exception\TransactionDecodeException;
-use FurqanSiddiqui\Bitcoin\Protocol\VarInt;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Transactions\UTXO\TxInput;
 
@@ -86,7 +85,7 @@ class RawTransactionDecoder
 
                         // Determine script Type
                         $inputScriptHex = $inputScript->buffer->toBase16();
-                        foreach (self::INPUT_SCRIPT_PUB_KEYS as $inputScriptExp) {
+                        foreach (static::INPUT_SCRIPT_PUB_KEYS as $inputScriptExp) {
                             if (preg_match($inputScriptExp, $inputScriptHex)) {
                                 $inputScriptPubKey = $inputScript;
                                 break;
@@ -99,7 +98,7 @@ class RawTransactionDecoder
                     }
 
                     $seqNo = $rawTxStream->readUInt32LE();
-                    $txInput = $tx->inputs()->add($prevTxHash, $prevTxIndex, $inputScriptPubKey, $seqNo);
+                    $txInput = $tx->appendInput($prevTxHash, $prevTxIndex, $inputScriptPubKey, $seqNo);
                     if ($inputScriptSig) {
                         $txInput->setScriptSig($inputScript);
                     }
@@ -114,7 +113,7 @@ class RawTransactionDecoder
                 try {
                     $value = $rawTxStream->readUInt64LE();
                     $scriptLen = static::readNextVarInt($rawTxStream);
-                    $tx->outputs()->add(Script::Decode($btc, new Buffer($rawTxStream->next($scriptLen))), $value);
+                    $tx->appendOutput(Script::Decode($btc, new Buffer($rawTxStream->next($scriptLen))), $value);
                 } catch (ScriptException $e) {
                     throw TransactionDecodeException::OutputScriptParseException($i, $e);
                 }
@@ -147,7 +146,7 @@ class RawTransactionDecoder
 
             // Lock time
             $decodeProgress = "lock time";
-            $tx->setLockTime(VarInt::Decode(bin2hex($rawTxStream->next(4)), 4));
+            $tx->lockTime = $rawTxStream->readUInt32LE();
         } catch (ByteReaderUnderflowException) {
             throw new TransactionDecodeException(
                 sprintf('Incomplete transaction data; Ran out of bytes near "%s"', $decodeProgress)

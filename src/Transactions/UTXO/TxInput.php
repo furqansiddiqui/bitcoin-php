@@ -98,7 +98,7 @@ class TxInput implements UTXOInterface
      * @param \FurqanSiddiqui\Bitcoin\Script\Script $redeemScript
      * @return $this
      */
-    public function setRedeemScript(Script $redeemScript): self
+    public function setRedeemScript(Script $redeemScript): static
     {
         $this->redeemScript = $redeemScript;
 
@@ -170,7 +170,7 @@ class TxInput implements UTXOInterface
      * @param Script $scriptSig
      * @return $this
      */
-    public function setScriptSig(Script $scriptSig): self
+    public function setScriptSig(Script $scriptSig): static
     {
         $this->scriptSig = $scriptSig;
         return $this;
