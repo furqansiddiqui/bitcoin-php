@@ -18,6 +18,8 @@ use Comely\Buffer\Buffer;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_P2WSH_Address;
+use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
@@ -29,6 +31,7 @@ class MultiSigScript
     public readonly int $total;
     private array $publicKeys = [];
     public readonly Script $redeemScript;
+    private array $privateKeys = [];
 
     /**
      * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
@@ -109,5 +112,41 @@ class MultiSigScript
     public function p2sh_P2WSH(): P2SH_P2WSH_Address
     {
         return $this->segWit();
+    }
+
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey $pK
+     * @return $this
+     */
+    public function addPrivateKey(PrivateKey $pK): static
+    {
+        $this->privateKeys[] = $pK;
+        return $this;
+    }
+
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Transactions\Transaction $tx
+     * @param int $inputIndex
+     * @param string|null $appendHashCodeByte
+     * @return array
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\SignatureException
+     */
+    public function signTransaction(Transaction $tx, int $inputIndex, ?string $appendHashCodeByte = "\1"): array
+    {
+        $signatures = [];
+        /** @var PrivateKey $privateKey */
+        foreach ($this->privateKeys as $privateKey) {
+            $sign = $privateKey->signTransaction($tx->hashPreImage($inputIndex))->getBitcoinSignature();
+            if ($appendHashCodeByte) {
+                $sign->append($appendHashCodeByte);
+            }
+
+            $signatures[] = $sign;
+        }
+
+        return $signatures;
     }
 }
