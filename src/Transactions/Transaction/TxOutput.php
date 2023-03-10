@@ -27,7 +27,7 @@ use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
  */
 class TxOutput implements TxInOutInterface
 {
-    public readonly AbstractPaymentAddress $address;
+    public readonly null|AbstractPaymentAddress $address;
     public readonly null|string $scriptError;
 
     /**
@@ -51,6 +51,7 @@ class TxOutput implements TxInOutInterface
             $this->address = $tx->btc->address->fromScriptPubKey($scriptPubKey);
         } catch (PaymentAddressException $e) {
             $this->scriptError = $e->getMessage();
+            $this->address = null;
         }
     }
 
@@ -85,7 +86,7 @@ class TxOutput implements TxInOutInterface
             "scriptPubKey" => [
                 "script" => $this->scriptPubKey->script,
                 "base16" => $this->scriptPubKey->buffer->toBase16(),
-                "address" => $this->address,
+                "address" => $this->address->address,
                 "type" => OOP::baseClassName(get_class($this->address)),
             ]
         ];
