@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,11 +14,9 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets;
 
-use Comely\DataTypes\Buffer\Binary;
-use Comely\DataTypes\DataTypes;
+use Comely\Buffer\Buffer;
 use FurqanSiddiqui\BIP39\BIP39;
 use FurqanSiddiqui\BIP39\Mnemonic;
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
 
 /**
  * Class MnemonicFactory
@@ -26,18 +24,6 @@ use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
  */
 class MnemonicFactory
 {
-    /** @var AbstractBitcoinNode */
-    private $node;
-
-    /**
-     * MnemonicFactory constructor.
-     * @param AbstractBitcoinNode $node
-     */
-    public function __construct(AbstractBitcoinNode $node)
-    {
-        $this->node = $node;
-    }
-
     /**
      * @param int $wordCount
      * @return Mnemonic
@@ -50,34 +36,26 @@ class MnemonicFactory
     }
 
     /**
-     * @param $entropy
-     * @return Mnemonic
+     * @param \Comely\Buffer\Buffer $entropy
+     * @param string $wordList
+     * @return \FurqanSiddiqui\BIP39\Mnemonic
      * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
      * @throws \FurqanSiddiqui\BIP39\Exception\WordListException
      */
-    public function useEntropy($entropy): Mnemonic
+    public function useEntropy(Buffer $entropy, string $wordList = "english"): Mnemonic
     {
-        if ($entropy instanceof Binary) {
-            $entropy = $entropy->base16()->hexits();
-        }
-
-        if (!is_string($entropy) || !DataTypes::isBase16($entropy)) {
-            throw new \InvalidArgumentException(
-                'Mnemonic entropy must be Hexadecimal string or instance of Binary buffer'
-            );
-        }
-
-        return BIP39::Entropy($entropy);
+        return BIP39::Entropy($entropy->toBase16(), $wordList);
     }
 
     /**
-     * @param $words
-     * @return Mnemonic
+     * @param array|string $words
+     * @param string $wordList
+     * @return \FurqanSiddiqui\BIP39\Mnemonic
      * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
      * @throws \FurqanSiddiqui\BIP39\Exception\WordListException
      */
-    public function fromWords($words): Mnemonic
+    public function fromWords(array|string $words, string $wordList = "english"): Mnemonic
     {
-        return BIP39::Words($words, null, true);
+        return BIP39::Words($words, $wordList, true);
     }
 }

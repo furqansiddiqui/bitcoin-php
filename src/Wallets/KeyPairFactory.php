@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,19 +14,15 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Wallets;
 
-use Comely\DataTypes\Buffer\Base16;
-use Comely\DataTypes\Buffer\Base64;
-use Comely\DataTypes\Buffer\Binary;
-use Comely\DataTypes\DataTypes;
-use FurqanSiddiqui\Base58\Result\Base58Encoded;
-use FurqanSiddiqui\BIP32\ECDSA\Curves;
+use Comely\Buffer\AbstractByteArray;
+use Comely\Buffer\Bytes32;
 use FurqanSiddiqui\BIP39\Mnemonic;
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
-use FurqanSiddiqui\Bitcoin\Serialize\WIF;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
-use FurqanSiddiqui\ECDSA\Signature\Signature;
+use FurqanSiddiqui\ECDSA\KeyPair;
 
 /**
  * Class KeyPairFactory
@@ -34,147 +30,76 @@ use FurqanSiddiqui\ECDSA\Signature\Signature;
  */
 class KeyPairFactory
 {
-    /** @var AbstractBitcoinNode */
-    private $node;
-
     /**
-     * KeyPairFactory constructor.
-     * @param AbstractBitcoinNode $node
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      */
-    public function __construct(AbstractBitcoinNode $node)
+    public function __construct(private readonly Bitcoin $btc)
     {
-        $this->node = $node;
     }
 
     /**
-     * @param int|null $bits
-     * @return PrivateKey
-     * @throws KeyPairException
+     * @return \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair
+     * @throws \FurqanSiddiqui\BIP32\Exception\KeyPairException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\KeyPairException
      */
-    public function generateSecurePrivateKey(?int $bits = null): PrivateKey
+    public function generateSecurePrivateKey(): BaseKeyPair
     {
-        $byteLength = 32; // Generates 256 bit of Entropy by default
-        $bitwiseLength = $bits ?? $this->node->const_private_key_bits;
-        if (is_int($bitwiseLength)) {
-            $byteLength = $bitwiseLength / 8;
-        }
-
-        try {
-            $randomBytes = random_bytes($byteLength);
-        } catch (\Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-            throw new KeyPairException('Failed to generate cryptographically secure pseudo-random bytes');
-        }
-
-        $entropy = (new Binary($randomBytes))->base16();
-        return new PrivateKey($this->node, $entropy, null);
+        return $this->privateKeyFromEntropy($this->btc->bip32()->generateSecureEntropy());
     }
 
     /**
-     * @param string|Base16 $entropy
-     * @return PrivateKey
+     * @param \Comely\Buffer\Bytes32 $entropy
+     * @return \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair
+     * @throws \FurqanSiddiqui\ECDSA\Exception\KeyPairException
      */
-    public function privateKeyFromEntropy($entropy): PrivateKey
+    public function privateKeyFromEntropy(Bytes32 $entropy): BaseKeyPair
     {
-        if (!$entropy instanceof Base16) {
-            if (!is_string($entropy) || !DataTypes::isBase16($entropy)) {
-                throw new \InvalidArgumentException(
-                    'Private key entropy must be Hexadecimal string or instance of Binary buffer'
-                );
-            }
-
-            $entropy = new Base16($entropy);
-        }
-
-        return new PrivateKey($this->node, $entropy, null);
+        $pK = new PrivateKey($this->btc, new KeyPair($this->btc->ecc, $entropy));
+        return new BaseKeyPair($this->btc, $pK);
     }
 
     /**
-     * @param Mnemonic $mnemonic
+     * @param \FurqanSiddiqui\BIP39\Mnemonic $mnemonic
      * @param string|null $passphrase
-     * @return PrivateKey
+     * @return \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair
+     * @throws \FurqanSiddiqui\ECDSA\Exception\KeyPairException
      */
-    public function privateKeyFromMnemonic(Mnemonic $mnemonic, ?string $passphrase = null): PrivateKey
+    public function privateKeyFromMnemonic(Mnemonic $mnemonic, ?string $passphrase = null): BaseKeyPair
     {
-        $byteLength = 0; // Default is 0, will get 512 bit entropy (entire Mnemonic seed)
-        $bitwiseLength = $this->node->const_private_key_bits;
-        if (is_int($bitwiseLength)) {
-            $byteLength = $bitwiseLength / 4; // Divide by 4 for 2 hexits in each byte
-        }
-
-        $seed = $mnemonic->generateSeed($passphrase, $byteLength);
-        if (!$seed instanceof Base16) {
-            $seed = new Base16($seed);
-        }
-
-        return new PrivateKey($this->node, $seed, null);
+        $entropy = new Bytes32($mnemonic->generateSeed($passphrase, 32));
+        return $this->privateKeyFromEntropy($entropy);
     }
 
     /**
-     * @param Base16 $publicKey
-     * @return PublicKey
-     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @param \Comely\Buffer\AbstractByteArray $publicKey
+     * @return \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey
+     * @throws \FurqanSiddiqui\ECDSA\Exception\KeyPairException
      */
-    public function publicKeyFromUncompressed(Base16 $publicKey): PublicKey
+    public function publicKeyFromUncompressed(AbstractByteArray $publicKey): PublicKey
     {
-        $curve = Curves::getInstanceOf($this->node->const_ecdsa_curve);
-        return new PublicKey($this->node, null, $curve, $publicKey, false);
+        return new PublicKey($this->btc, \FurqanSiddiqui\ECDSA\ECC\PublicKey::fromDER($publicKey));
     }
 
     /**
-     * @param Base16 $publicKey
-     * @return PublicKey
-     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
+     * @param string $b58WIF
+     * @return \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair
+     * @throws \FurqanSiddiqui\BIP32\Exception\Base58CheckException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\KeyPairException
+     * @throws \FurqanSiddiqui\ECDSA\Exception\KeyPairException
      */
-    public function publicKeyFromCompressed(Base16 $publicKey): PublicKey
+    public function importWIF(string $b58WIF): BaseKeyPair
     {
-        $curve = Curves::getInstanceOf($this->node->const_ecdsa_curve);
-        return new PublicKey($this->node, null, $curve, $publicKey, true);
-    }
-
-    /**
-     * @param Base64 $signed
-     * @param string $message
-     * @return PublicKey
-     * @throws \FurqanSiddiqui\BIP32\Exception\PublicKeyException
-     */
-    public function publicKeyFromSignature(Base64 $signed, string $message): PublicKey
-    {
-        $curve = Curves::getInstanceOf($this->node->const_ecdsa_curve);
-        $rawSignature = $signed->binary()->readOnly(true);
-        $signature = new Signature(
-            $rawSignature->copy(1, 32)->base16(),
-            $rawSignature->copy(33)->base16()
-        );
-
-        $msgHash = $this->node->messages()->msgHash($message);
-        $ecPubKey = $curve->recoverPublicKeyFromSignature($signature, $msgHash, ord($rawSignature->value(0, 1)));
-        return new PublicKey($this->node, null, $curve, $ecPubKey->getCompressed(), true);
-    }
-
-    /**
-     * @param $wif
-     * @param bool $isCompressed
-     * @param int|null $prefix
-     * @return PrivateKey
-     * @throws KeyPairException
-     */
-    public function import($wif, bool $isCompressed = true, ?int $prefix = null): PrivateKey
-    {
-        if (!$wif instanceof Base58Encoded) {
-            if (!is_string($wif) || !$wif) {
-                throw new \InvalidArgumentException('Private key import method requires first argument to be Base58Encoded buffer or a String');
-            }
-
-            $wif = new Base58Encoded($wif);
+        $buffer = $this->btc->base58()->checkDecode($b58WIF);
+        if ($buffer->len() !== 34) {
+            throw new KeyPairException(sprintf('Expected decoded WIF buffer of 34 bytes, got %d', $buffer->len()));
         }
 
-        $prefix = $prefix ?? $this->node->const_wif_prefix;
-        if (!is_int($prefix)) {
-            throw new KeyPairException('WIF prefix constant not defined');
+        $prefixByte = ord($buffer->pop(1));
+        if ($prefixByte !== $this->btc->network->wif_prefix) {
+            throw new KeyPairException('WIF private key network prefix does not match');
         }
 
-        $privateKey = WIF::Decode($prefix, $wif, $isCompressed);
-        return new PrivateKey($this->node, $privateKey, null);
+        $buffer->pop(-1); // Remove last byte (compressed flag)
+        return $this->privateKeyFromEntropy(new Bytes32($buffer->raw()));
     }
 }
