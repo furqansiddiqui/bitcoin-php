@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
+namespace FurqanSiddiqui\Bitcoin\Transactions\UTXO;
 
 use Comely\Buffer\BigInteger\LittleEndian;
 use Comely\Utils\OOP\OOP;
@@ -25,7 +25,7 @@ use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
  * Class TxOutput
  * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
  */
-class TxOutput implements TxInOutInterface
+class TxOutput implements UTXOInterface
 {
     public readonly null|AbstractPaymentAddress $address;
     public readonly null|string $scriptError;
