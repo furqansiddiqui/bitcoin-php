@@ -32,13 +32,11 @@ class TxOutput implements UTXOInterface
 
     /**
      * @param \FurqanSiddiqui\Bitcoin\Transactions\Transaction $tx
-     * @param int $index
      * @param int $value
      * @param \FurqanSiddiqui\Bitcoin\Script\Script $scriptPubKey
      */
     public function __construct(
         Transaction            $tx,
-        public readonly int    $index,
         public readonly int    $value,
         public readonly Script $scriptPubKey)
     {
@@ -54,7 +52,6 @@ class TxOutput implements UTXOInterface
             $this->address = null;
         }
     }
-
 
     /**
      * @return array
