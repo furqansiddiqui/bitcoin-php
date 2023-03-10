@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 
-use Comely\DataTypes\Buffer\Base16;
+use Comely\Buffer\BigInteger\LittleEndian;
+use Comely\Utils\OOP\OOP;
+use FurqanSiddiqui\Bitcoin\Address\AbstractPaymentAddress;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
@@ -22,80 +24,36 @@ use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 /**
  * Class TxOutput
  * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
- * @property-read int $index
- * @property-read int $valueAsInt
- * @property-read Base16 $valueUInt64LE
- * @property-read string|null $type
- * @property-read string|null $address
- * @property-read string|null $scriptError
  */
 class TxOutput implements TxInOutInterface
 {
-    /** @var Transaction */
-    private $tx;
-    /** @var int */
-    private $index;
-    /** @var int */
-    private $value;
-    /** @var Script */
-    private $scriptPubKey;
-    /** @var null|string */
-    private $type;
-    /** @var null|string */
-    private $address;
-    /** @var null|string */
-    private $scriptError;
+    public readonly AbstractPaymentAddress $address;
+    public readonly null|string $scriptError;
 
     /**
-     * TxOutput constructor.
-     * @param Transaction $tx
+     * @param \FurqanSiddiqui\Bitcoin\Transactions\Transaction $tx
      * @param int $index
-     * @param int $satoshis
-     * @param Script $scriptPubKey
+     * @param int $value
+     * @param \FurqanSiddiqui\Bitcoin\Script\Script $scriptPubKey
      */
-    public function __construct(Transaction $tx, int $index, int $satoshis, Script $scriptPubKey)
+    public function __construct(
+        Transaction            $tx,
+        public readonly int    $index,
+        public readonly int    $value,
+        public readonly Script $scriptPubKey)
     {
-        if ($satoshis < 0) {
+        if ($value < 0) {
             throw new \InvalidArgumentException('Tx output value must be positive integer');
         }
 
-        $this->tx = $tx;
-        $this->index = $index;
-        $this->value = $satoshis;
-        $this->scriptPubKey = $scriptPubKey;
-
         // Convert ScriptPubKey to address and appropriate address-type
         try {
-            $address = $tx->network->address()->addressFromScript($scriptPubKey);
-            $this->type = $address->type();
-            $this->address = $address->address();
+            $this->address = $tx->btc->address->fromScriptPubKey($scriptPubKey);
         } catch (PaymentAddressException $e) {
             $this->scriptError = $e->getMessage();
         }
     }
 
-    /**
-     * @param $prop
-     * @return Base16|int
-     */
-    public function __get($prop)
-    {
-        switch ($prop) {
-            case "valueAsInt":
-                return $this->value;
-            case "valueUInt64LE":
-                // Convert value to uint64 little endian
-                $uInt64LE = bin2hex(pack("P", $this->value));
-                return new Base16($uInt64LE);
-            case "index":
-            case "type":
-            case "address":
-            case "scriptError":
-                return $this->$prop;
-        }
-
-        throw new \OutOfBoundsException('Cannot get value of inaccessible property');
-    }
 
     /**
      * @return array
@@ -106,29 +64,11 @@ class TxOutput implements TxInOutInterface
     }
 
     /**
-     * Get amount to transfer in satoshis
-     * @return int
-     */
-    public function value(): int
-    {
-        return $this->value;
-    }
-
-    /**
-     * Get scriptPubKey
-     * @return Script
-     */
-    public function scriptPubKey(): Script
-    {
-        return $this->scriptPubKey;
-    }
-
-    /**
      * @return int
      */
     public function sizeInBytes(): int
     {
-        return 8 + 1 + $this->scriptPubKey->script()->binary()->sizeInBytes;
+        return 8 + 1 + $this->scriptPubKey->buffer->len();
     }
 
     /**
@@ -139,14 +79,14 @@ class TxOutput implements TxInOutInterface
     {
         $dump = [
             "value" => [
-                "dec" => $this->valueAsInt,
-                "uInt64LE" => $this->valueUInt64LE->hexits(false)
+                "dec" => $this->value,
+                "uInt64LE" => bin2hex(LittleEndian::PackUInt64($this->value))
             ],
             "scriptPubKey" => [
-                "script" => $this->scriptPubKey->raw(),
-                "base16" => $this->scriptPubKey->script()->hexits(false),
-                "type" => $this->type,
+                "script" => $this->scriptPubKey->script,
+                "base16" => $this->scriptPubKey->buffer->toBase16(),
                 "address" => $this->address,
+                "type" => OOP::baseClassName(get_class($this->address)),
             ]
         ];
 
