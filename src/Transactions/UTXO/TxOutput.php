@@ -37,8 +37,9 @@ class TxOutput implements UTXOInterface
      */
     public function __construct(
         Transaction            $tx,
-        public readonly int    $value,
-        public readonly Script $scriptPubKey)
+        public readonly Script $scriptPubKey,
+        public readonly int    $value
+    )
     {
         if ($value < 0) {
             throw new \InvalidArgumentException('Tx output value must be positive integer');
