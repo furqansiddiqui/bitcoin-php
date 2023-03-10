@@ -16,6 +16,9 @@ namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
 use Comely\Buffer\Buffer;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
+use FurqanSiddiqui\Bitcoin\Protocol\Signature;
+use FurqanSiddiqui\Bitcoin\Transactions\SerializedTransaction;
+use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 use FurqanSiddiqui\ECDSA\KeyPair;
 
 /**
@@ -46,5 +49,15 @@ class PrivateKey extends \FurqanSiddiqui\BIP32\KeyPair\PrivateKey
             ->prependUInt8($this->btc->network->wif_prefix); // Network prefix
 
         return $this->btc->base58()->checkEncode($raw);
+    }
+
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Transactions\SerializedTransaction $txn
+     * @return \FurqanSiddiqui\Bitcoin\Protocol\Signature
+     * @throws \FurqanSiddiqui\ECDSA\Exception\SignatureException
+     */
+    public function signTransaction(SerializedTransaction $txn): Signature
+    {
+        return new Signature($this->eccPrivateKey->signRecoverable($txn->hash));
     }
 }
