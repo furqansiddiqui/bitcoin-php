@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bitcoin-php" package.
  * https://github.com/furqansiddiqui/bitcoin-php
  *
- * Copyright (c) 2019-2020 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ *  Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,8 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions;
 
-use Comely\DataTypes\Buffer\Base16;
-use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
+use Comely\Buffer\Buffer;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 
 /**
  * Class TransactionsFactory
@@ -23,16 +23,11 @@ use FurqanSiddiqui\Bitcoin\AbstractBitcoinNode;
  */
 class TransactionsFactory
 {
-    /** @var AbstractBitcoinNode */
-    private $network;
-
     /**
-     * TransactionsFactory constructor.
-     * @param AbstractBitcoinNode $network
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      */
-    public function __construct(AbstractBitcoinNode $network)
+    public function __construct(private readonly Bitcoin $btc)
     {
-        $this->network = $network;
     }
 
     /**
@@ -40,16 +35,16 @@ class TransactionsFactory
      */
     public function new(): Transaction
     {
-        return new Transaction($this->network);
+        return new Transaction($this->btc);
     }
 
     /**
-     * @param Base16 $rawTx
-     * @return Transaction
+     * @param \Comely\Buffer\Buffer $rawTx
+     * @return \FurqanSiddiqui\Bitcoin\Transactions\Transaction
      * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionDecodeException
      */
-    public function decode(Base16 $rawTx): Transaction
+    public function decode(Buffer $rawTx): Transaction
     {
-        return RawTransactionDecoder::Decode($this->network, $rawTx);
+        return RawTransactionDecoder::Decode($this->btc, $rawTx);
     }
 }
