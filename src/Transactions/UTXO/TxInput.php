@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Transactions\UTXO;
 
+use Comely\Buffer\AbstractByteArray;
 use Comely\Buffer\BigInteger\LittleEndian;
 use Comely\Buffer\Buffer;
 use Comely\Buffer\Bytes32;
@@ -26,7 +27,7 @@ use FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException;
 use FurqanSiddiqui\Bitcoin\Script\MultiSigScript;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
-use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PrivateKey;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair;
 use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
@@ -39,12 +40,19 @@ class TxInput implements UTXOInterface
     public readonly null|string $scriptError;
 
     private array $segWitData = [];
-    public ?Script $scriptSig = null;
-    public ?PrivateKey $privateKey = null;
-    public ?MultiSigScript $multiSigScript = null;
-    public ?Script $redeemScript;
-    private ?string $redeemScriptType = null;
+    private null|BaseKeyPair|MultiSigScript $signingMethod;
+    private ?Script $scriptSig = null;
+    private ?Script $redeemScript;
+    public ?string $redeemScriptType = null;
 
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Transactions\Transaction $tx
+     * @param \Comely\Buffer\Bytes32 $prevTxHash
+     * @param int $index
+     * @param \FurqanSiddiqui\Bitcoin\Script\Script|null $scriptPubKey
+     * @param int $seqNo
+     * @param int $value
+     */
     public function __construct(
         private readonly Transaction $tx,
         public readonly Bytes32      $prevTxHash,
@@ -114,16 +122,16 @@ class TxInput implements UTXOInterface
     }
 
     /**
-     * @param \Comely\Buffer\Buffer $signature
+     * @param \Comely\Buffer\AbstractByteArray $signature
      * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey $publicKey
      * @return \FurqanSiddiqui\Bitcoin\Script\Script
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException
      */
-    public function createScriptSig(Buffer $signature, PublicKey $publicKey): Script
+    public function createScriptSig(AbstractByteArray $signature, PublicKey $publicKey): Script
     {
-        $signature = $signature->copy()->append("\1"); // One-byte hash code type
+        $signature = (new Buffer($signature->raw()))->append("\1"); // One-byte hash code type
         $scriptSig = $this->tx->btc->scripts->new();
 
         if (!$this->scriptPubKey || !$this->address) {
@@ -193,6 +201,23 @@ class TxInput implements UTXOInterface
         );
     }
 
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair|\FurqanSiddiqui\Bitcoin\Script\MultiSigScript $signingMethod
+     * @return $this
+     */
+    public function setSigningMethod(BaseKeyPair|MultiSigScript $signingMethod): static
+    {
+        $this->signingMethod = $signingMethod;
+        return $this;
+    }
+
+    /**
+     * @return \FurqanSiddiqui\Bitcoin\Script\Script|\FurqanSiddiqui\Bitcoin\Wallets\KeyPair\BaseKeyPair|\FurqanSiddiqui\Bitcoin\Script\MultiSigScript|null
+     */
+    public function getSigningMethod(): null|Script|BaseKeyPair|MultiSigScript
+    {
+        return $this->scriptSig ?? $this->signingMethod;
+    }
 
     /**
      * @return int

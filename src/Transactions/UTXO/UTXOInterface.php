@@ -16,7 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Transactions\UTXO;
 
 /**
  * Interface UTXOInterface
- * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
+ * @package FurqanSiddiqui\Bitcoin\Transactions\UTXO
  */
 interface UTXOInterface
 {

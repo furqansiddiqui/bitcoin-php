@@ -23,7 +23,7 @@ use FurqanSiddiqui\Bitcoin\Transactions\Transaction;
 
 /**
  * Class TxOutput
- * @package FurqanSiddiqui\Bitcoin\Transactions\Transaction
+ * @package FurqanSiddiqui\Bitcoin\Transactions\UTXO
  */
 class TxOutput implements UTXOInterface
 {
