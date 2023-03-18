@@ -37,6 +37,7 @@ class Bitcoin extends AbstractNetworkConfig
             wif_prefix: 0x80,
             bip32_privatePrefix: new Bits32(hex2bin("0488ADE4")),
             bip32_publicPrefix: new Bits32(hex2bin("0488B21E")),
+            bech32HRP: "bc"
         );
     }
 
@@ -52,6 +53,7 @@ class Bitcoin extends AbstractNetworkConfig
             wif_prefix: 0xEF,
             bip32_privatePrefix: new Bits32(hex2bin("04358394")),
             bip32_publicPrefix: new Bits32(hex2bin("043587CF")),
+            bech32HRP: "tb"
         );
     }
 
@@ -68,6 +70,8 @@ class Bitcoin extends AbstractNetworkConfig
      * @param string $base58Charset
      * @param bool $base58CaseSensitive
      * @param string $signedMessagePrefix
+     * @param int $bech32Witness
+     * @param string $bech32HRP
      * @return static
      */
     public static function CustomNetwork(
@@ -83,6 +87,9 @@ class Bitcoin extends AbstractNetworkConfig
         string  $base58Charset = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
         bool    $base58CaseSensitive = true,
         string  $signedMessagePrefix = "Bitcoin Signed Message:\n",
+        string  $bech32Charset = "qpzry9x8gf2tvdw0s3jn54khce6mua7l",
+        int     $bech32Witness = 0x00,
+        string  $bech32HRP = "tb"
     ): static
     {
         return new static(
@@ -97,7 +104,10 @@ class Bitcoin extends AbstractNetworkConfig
             bip32_publicPrefix: $bip32_publicPrefix ?? new Bits32(hex2bin("0488B21E")),
             bip32_hardenedIndexBeginsFrom: $bip32_hardenedIndexBeginsFrom,
             base58Charset: $base58Charset,
-            base58CaseSensitive: $base58CaseSensitive
+            base58CaseSensitive: $base58CaseSensitive,
+            bech32Charset: $bech32Charset,
+            bech32Witness: $bech32Witness,
+            bech32HRP: $bech32HRP
         );
     }
 

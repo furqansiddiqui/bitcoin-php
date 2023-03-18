@@ -38,6 +38,9 @@ abstract class AbstractNetworkConfig extends \FurqanSiddiqui\BIP32\Networks\Abst
      * @param int $bip32_hardenedIndexBeginsFrom
      * @param string $base58Charset
      * @param bool $base58CaseSensitive
+     * @param string $bech32Charset
+     * @param int $bech32Witness
+     * @param string $bech32HRP
      */
     final protected function __construct(
         public readonly string $name,
@@ -52,6 +55,9 @@ abstract class AbstractNetworkConfig extends \FurqanSiddiqui\BIP32\Networks\Abst
         int                    $bip32_hardenedIndexBeginsFrom,
         string                 $base58Charset,
         bool                   $base58CaseSensitive,
+        public readonly string $bech32Charset,
+        public readonly int    $bech32Witness,
+        public readonly string $bech32HRP,
     )
     {
         parent::__construct(

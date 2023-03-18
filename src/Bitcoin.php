@@ -23,6 +23,7 @@ use FurqanSiddiqui\BIP32\Buffers\BIP32_Provider;
 use FurqanSiddiqui\Bitcoin\Address\AddressFactory;
 use FurqanSiddiqui\Bitcoin\Exception\KeyPairException;
 use FurqanSiddiqui\Bitcoin\Networks\AbstractNetworkConfig;
+use FurqanSiddiqui\Bitcoin\Protocol\Bech32;
 use FurqanSiddiqui\Bitcoin\Protocol\VarInt;
 use FurqanSiddiqui\Bitcoin\Script\ScriptFactory;
 use FurqanSiddiqui\Bitcoin\Transactions\TransactionsFactory;
@@ -43,6 +44,7 @@ class Bitcoin implements BIP32_Provider
     public readonly AddressFactory $address;
     public readonly TransactionsFactory $txn;
     public readonly Wallets $wallets;
+    public readonly Bech32 $bech32;
 
     /**
      * @param \FurqanSiddiqui\Bitcoin\Networks\AbstractNetworkConfig $network
@@ -58,6 +60,7 @@ class Bitcoin implements BIP32_Provider
         $this->address = new AddressFactory($this);
         $this->txn = new TransactionsFactory($this);
         $this->wallets = new Wallets($this);
+        $this->bech32 = new Bech32($this);
     }
 
     /**
