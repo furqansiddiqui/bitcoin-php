@@ -17,6 +17,7 @@ namespace FurqanSiddiqui\Bitcoin\Protocol;
 use Comely\Buffer\AbstractByteArray;
 use Comely\Buffer\Buffer;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
+use FurqanSiddiqui\Bitcoin\Exception\Bech32Exception;
 
 /**
  * Class Bech32
@@ -124,5 +125,44 @@ class Bech32
         }
 
         return $address;
+    }
+
+    /**
+     * @param string $address
+     * @param bool $validateChecksum
+     * @return array
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\Bech32Exception
+     */
+    public function decode(string $address, bool $validateChecksum = true): array
+    {
+        $address = explode(strval(static::SEPARATOR), $address);
+        if ($address[0] !== $this->btc->network->bech32HRP) {
+            throw new Bech32Exception('Bech32 network HRP does not match');
+        }
+
+        $address = $address[1] ?? null;
+        if (!$address) {
+            throw new Bech32Exception('Incomplete Bech32 address');
+        }
+
+        $byteArray = new Buffer();
+        for ($i = 0; $i < strlen($address); $i++) {
+            $byteArray->append(chr(strpos($this->btc->network->bech32Charset, $address[$i])));
+        }
+
+        if ($validateChecksum) {
+            $checksum = $byteArray->pop(-6); // Remove last 6 checksum bytes
+            if ($checksum !== $this->createChecksum($byteArray)) {
+                throw new Bech32Exception('Checksum validation failed');
+            }
+        }
+
+        $byteArray = $byteArray->byteArray();
+        $fiveBits = [];
+        foreach ($byteArray as $byte) {
+            $fiveBits[] = str_pad(ltrim(gmp_strval(gmp_intval($byte), 2), "0"), 5, "0", STR_PAD_LEFT);
+        }
+
+        return $fiveBits;
     }
 }
