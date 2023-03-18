@@ -36,7 +36,7 @@ use FurqanSiddiqui\ECDSA\KeyPair;
  * Class Bitcoin
  * @package FurqanSiddiqui\Bitcoin
  */
-abstract class Bitcoin implements BIP32_Provider
+class Bitcoin implements BIP32_Provider
 {
     public readonly BIP32 $bip32;
     public readonly ScriptFactory $scripts;
