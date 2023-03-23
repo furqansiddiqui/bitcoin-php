@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Address;
 
+use Comely\Buffer\Bytes20;
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 
@@ -23,6 +25,15 @@ use FurqanSiddiqui\Bitcoin\Script\Script;
  */
 class P2PKH_Address extends AbstractBase58Address
 {
+    /** @var \Comely\Buffer\Bytes20 */
+    private readonly Bytes20 $hash160;
+
+    public function __construct(Bitcoin $btc, string $address, bool $prefixCheck = true)
+    {
+        parent::__construct($btc, $address, $prefixCheck);
+        $this->hash160 = new Bytes20(substr($this->raw->raw(), 1));
+    }
+
     /**
      * @return void
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
@@ -44,7 +55,7 @@ class P2PKH_Address extends AbstractBase58Address
         $opCode = $this->btc->scripts->new()
             ->OP_DUP()
             ->OP_HASH160()
-            ->PUSHDATA($this->raw)
+            ->PUSHDATA($this->hash160)
             ->OP_EQUALVERIFY()
             ->OP_CHECKSIG();
 

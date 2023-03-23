@@ -59,8 +59,6 @@ class Signature implements SignatureInterface
      */
     public function getBitcoinSignature(): Buffer
     {
-        return (new Buffer())->appendUInt8($this->eccSignature->recoveryId + 31)
-            ->append($this->eccSignature->r)
-            ->append($this->eccSignature->s);
+        return new Buffer($this->getDER()->raw());
     }
 }

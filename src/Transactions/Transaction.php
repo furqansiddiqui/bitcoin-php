@@ -122,7 +122,7 @@ class Transaction
      * @param int $value
      * @return \FurqanSiddiqui\Bitcoin\Transactions\UTXO\TxInput
      */
-    public function appendInput(Bytes32 $prevTxHash, int $index, ?Script $scriptPubKey, int $seq = 0xffffffff, int $value = 0): TxInput
+    public function appendInput(Bytes32 $prevTxHash, int $index, ?Script $scriptPubKey = null, int $seq = 0xffffffff, int $value = 0): TxInput
     {
         $txI = new TxInput($this, $prevTxHash, $index, $scriptPubKey, $seq, $value);
         $this->inputs[] = $txI;
@@ -360,7 +360,7 @@ class Transaction
             } elseif ($inputScriptSigMethod instanceof BaseKeyPair) {
                 // Sign with private key
                 $signature = $inputScriptSigMethod->privateKey()->signTransaction($this->hashPreImage($inputNum));
-                $scriptSig = $input->createScriptSig($signature->getBitcoinSignature(), $inputScriptSigMethod->publicKey());
+                $scriptSig = $input->createScriptSig($signature->getDER(), $inputScriptSigMethod->publicKey());
             } elseif ($inputScriptSigMethod instanceof MultiSigScript) {
                 // Take signatures from MultiSigScript object
                 $signatures = $inputScriptSigMethod->signTransaction($this, $inputNum);

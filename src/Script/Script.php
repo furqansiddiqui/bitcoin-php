@@ -144,8 +144,8 @@ class Script
 
                 if (strlen($data) % 2 !== 0) {
                     throw new ScriptParseException('Base16 encoded PUSHDATA must be of even length', $index);
-                } elseif (strlen($data) * 2 !== $len) {
-                    throw new ScriptParseException('Expected PUSHDATA of %d hexits, got %d', $len, strlen($data));
+                } elseif (strlen($data) !== $len * 2) {
+                    throw new ScriptParseException(sprintf('Expected PUSHDATA of %d hexits, got %d', $len, strlen($data)), $index);
                 }
 
                 $buffer->appendUInt8($len);

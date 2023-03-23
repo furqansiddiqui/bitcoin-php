@@ -16,6 +16,7 @@ namespace FurqanSiddiqui\Bitcoin\Wallets\KeyPair;
 
 use Comely\Buffer\Buffer;
 use Comely\Buffer\Bytes20;
+use FurqanSiddiqui\Bitcoin\Address\Bech32_P2WPKH_Address;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Address\P2PKH_Address;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
@@ -50,6 +51,15 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     {
         $rawP2PKH = (new Buffer($this->hash160->raw()))->prependUInt8($this->btc->network->p2pkh_prefix);
         return new P2PKH_Address($this->btc, $this->btc->bip32->base58->checkEncode($rawP2PKH));
+    }
+
+    /**
+     * @return \FurqanSiddiqui\Bitcoin\Address\Bech32_P2WPKH_Address
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
+    public function bech32_p2wpkh(): Bech32_P2WPKH_Address
+    {
+        return new Bech32_P2WPKH_Address($this->btc, $this->btc->bech32->encode($this->hash160));
     }
 
     /**

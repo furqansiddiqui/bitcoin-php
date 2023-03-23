@@ -160,7 +160,6 @@ class TxInput implements UTXOInterface
             }
         }
 
-
         $scriptSig = $scriptSig->getScript();
         $this->setScriptSig($scriptSig);
         return $scriptSig;
