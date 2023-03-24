@@ -386,11 +386,7 @@ class Transaction
                 $scriptSig = $inputScriptSigMethod;
             } elseif ($inputScriptSigMethod instanceof BaseKeyPair) {
                 // Sign with private key
-                var_dump($inputNum);
-                var_dump(get_class($input->address));
-                var_dump($this->hashPreImage($inputNum)->rawTx->toBase16());
                 $signature = $inputScriptSigMethod->privateKey()->signTransaction($this->hashPreImage($inputNum));
-                var_dump($signature->getDER()->toBase16());
                 $scriptSig = $input->createScriptSig($signature->getDER(), $inputScriptSigMethod->publicKey());
             } elseif ($inputScriptSigMethod instanceof MultiSigScript) {
                 // Take signatures from MultiSigScript object
