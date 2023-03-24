@@ -20,6 +20,7 @@ use Comely\Buffer\Buffer;
 use Comely\Buffer\Bytes32;
 use Comely\Utils\OOP\OOP;
 use FurqanSiddiqui\Bitcoin\Address\AbstractPaymentAddress;
+use FurqanSiddiqui\Bitcoin\Address\Bech32_P2WPKH_Address;
 use FurqanSiddiqui\Bitcoin\Address\P2PKH_Address;
 use FurqanSiddiqui\Bitcoin\Address\P2SH_Address;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
@@ -52,6 +53,7 @@ class TxInput implements UTXOInterface
      * @param \FurqanSiddiqui\Bitcoin\Script\Script|null $scriptPubKey
      * @param int $seqNo
      * @param int $value
+     * @param \FurqanSiddiqui\Bitcoin\Address\AbstractPaymentAddress|null $address
      */
     public function __construct(
         private readonly Transaction $tx,
@@ -59,21 +61,22 @@ class TxInput implements UTXOInterface
         public readonly int          $index,
         public readonly ?Script      $scriptPubKey = null,
         public readonly int          $seqNo = 0xffffffff,
-        public readonly int          $value = 0
+        public readonly int          $value = 0,
+        ?AbstractPaymentAddress      $address = null,
     )
     {
         // Convert ScriptPubKey to address and appropriate address-type
-        if ($scriptPubKey) {
+        if ($scriptPubKey && !$address) {
             try {
-                $this->address = $tx->btc->address->fromScriptPubKey($scriptPubKey);
+                $address = $tx->btc->address->fromScriptPubKey($scriptPubKey);
             } catch (PaymentAddressException $e) {
                 $this->scriptError = $e->getMessage();
-                $this->address = null;
             }
         } else {
-            $this->address = null;
             $this->scriptError = null;
         }
+
+        $this->address = $address instanceof AbstractPaymentAddress ? $address : null;
     }
 
     /**
@@ -92,6 +95,14 @@ class TxInput implements UTXOInterface
     public function getWitnessData(): array
     {
         return $this->segWitData;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasWitnessData(): bool
+    {
+        return count($this->segWitData) > 0;
     }
 
     /**
@@ -124,12 +135,12 @@ class TxInput implements UTXOInterface
     /**
      * @param \Comely\Buffer\AbstractByteArray $signature
      * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey $publicKey
-     * @return \FurqanSiddiqui\Bitcoin\Script\Script
+     * @return \FurqanSiddiqui\Bitcoin\Script\Script|null
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
      * @throws \FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException
      */
-    public function createScriptSig(AbstractByteArray $signature, PublicKey $publicKey): Script
+    public function createScriptSig(AbstractByteArray $signature, PublicKey $publicKey): ?Script
     {
         $signature = (new Buffer($signature->raw()))->append("\1"); // One-byte hash code type
         $scriptSig = $this->tx->btc->scripts->new();
@@ -158,10 +169,17 @@ class TxInput implements UTXOInterface
                 // 2nd part of ScriptSig for P2SH = RedeemScript
                 $scriptSig->PUSHDATA($this->redeemScript->buffer);
             }
+        } elseif ($this->address instanceof Bech32_P2WPKH_Address) {
+            $this->setWitnessData($signature);
+            $this->setWitnessData($publicKey->compressed());
+            $scriptSig = null;
         }
 
-        $scriptSig = $scriptSig->getScript();
-        $this->setScriptSig($scriptSig);
+        if ($scriptSig) {
+            $scriptSig = $scriptSig->getScript();
+            $this->setScriptSig($scriptSig);
+        }
+
         return $scriptSig;
     }
 
@@ -186,13 +204,15 @@ class TxInput implements UTXOInterface
         }
 
         if ($this->address instanceof P2SH_Address) {
-            if (!$this->redeemScript) {
+            if (!isset($this->redeemScript)) {
                 throw new TransactionInputSignException('Cannot sign a P2SH input without RedeemScript');
             }
 
             return $this->redeemScript;
         } elseif ($this->address instanceof P2PKH_Address) {
             return $this->scriptPubKey;
+        } elseif ($this->address instanceof Bech32_P2WPKH_Address) {
+            return null;
         }
 
         throw new TransactionInputSignException(

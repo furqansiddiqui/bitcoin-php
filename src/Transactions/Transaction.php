@@ -17,6 +17,8 @@ namespace FurqanSiddiqui\Bitcoin\Transactions;
 use Comely\Buffer\BigInteger\LittleEndian;
 use Comely\Buffer\Buffer;
 use Comely\Buffer\Bytes32;
+use FurqanSiddiqui\Bitcoin\Address\AbstractPaymentAddress;
+use FurqanSiddiqui\Bitcoin\Address\Bech32_P2WPKH_Address;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\TransactionInputSignException;
 use FurqanSiddiqui\Bitcoin\Protocol\VarInt;
@@ -120,11 +122,19 @@ class Transaction
      * @param \FurqanSiddiqui\Bitcoin\Script\Script|null $scriptPubKey
      * @param int $seq
      * @param int $value
+     * @param \FurqanSiddiqui\Bitcoin\Address\AbstractPaymentAddress|null $address
      * @return \FurqanSiddiqui\Bitcoin\Transactions\UTXO\TxInput
      */
-    public function appendInput(Bytes32 $prevTxHash, int $index, ?Script $scriptPubKey = null, int $seq = 0xffffffff, int $value = 0): TxInput
+    public function appendInput(
+        Bytes32                 $prevTxHash,
+        int                     $index,
+        ?Script                 $scriptPubKey = null,
+        int                     $seq = 0xffffffff,
+        int                     $value = 0,
+        ?AbstractPaymentAddress $address = null
+    ): TxInput
     {
-        $txI = new TxInput($this, $prevTxHash, $index, $scriptPubKey, $seq, $value);
+        $txI = new TxInput($this, $prevTxHash, $index, $scriptPubKey, $seq, $value, $address);
         $this->inputs[] = $txI;
         return $txI;
     }
@@ -234,6 +244,8 @@ class Transaction
             if (in_array($signingInput->redeemScriptType, ["p2sh-p2wpkh", "p2sh-p2wsh"])) {
                 // Swap buffer with SegWit format hashPreImage buffer
                 $preImage = $this->hashPreImageSegWit($signingInput, $hashPrevOuts, $hashSequences, $hashOutputs);
+            } elseif ($signingInput->address instanceof Bech32_P2WPKH_Address) {
+                $preImage = $this->hashPreImageSegWit($signingInput, $hashPrevOuts, $hashSequences, $hashOutputs);
             }
         }
 
@@ -275,7 +287,7 @@ class Transaction
         // Append hashSequence
         $segWitInput->append($prevSeqHash);
         // Outpoint
-        $segWitInput->append(implode("", array_reverse(str_split($input->prevTxHash->toBase16(), 1))));
+        $segWitInput->append(implode("", array_reverse(str_split($input->prevTxHash->raw(), 1))));
         $segWitInput->appendUInt32LE($input->index);
 
         // ScriptCode
@@ -297,6 +309,20 @@ class Transaction
             } else {
                 $scriptCode = $input->getRedeemScript();
             }
+        } elseif ($input->address instanceof Bech32_P2WPKH_Address) {
+            if (!$input->address->publicKey) {
+                throw new TransactionInputSignException(
+                    'Cannot from scriptCode for "Bech32_P2WPKH_Address" without relative PublicKey set for address'
+                );
+            }
+
+            $scriptCode = $this->btc->scripts->new()
+                ->OP_DUP()
+                ->OP_HASH160()
+                ->PUSHDATA($input->address->publicKey->hash160)
+                ->OP_EQUALVERIFY()
+                ->OP_CHECKSIG()
+                ->getScript();
         }
 
         if (!$scriptCode) {
@@ -305,8 +331,9 @@ class Transaction
             );
         }
 
-        $segWitInput->append(VarInt::Int2Bin($scriptCode->buffer->len()));
-        $segWitInput->append($scriptCode->buffer);
+        $scriptCode = $scriptCode->buffer ?? new Buffer();
+        $segWitInput->append(VarInt::Int2Bin($scriptCode->len()));
+        $segWitInput->append($scriptCode);
 
         // Value
         $segWitInput->appendUInt64LE($input->value);
@@ -359,7 +386,11 @@ class Transaction
                 $scriptSig = $inputScriptSigMethod;
             } elseif ($inputScriptSigMethod instanceof BaseKeyPair) {
                 // Sign with private key
+                var_dump($inputNum);
+                var_dump(get_class($input->address));
+                var_dump($this->hashPreImage($inputNum)->rawTx->toBase16());
                 $signature = $inputScriptSigMethod->privateKey()->signTransaction($this->hashPreImage($inputNum));
+                var_dump($signature->getDER()->toBase16());
                 $scriptSig = $input->createScriptSig($signature->getDER(), $inputScriptSigMethod->publicKey());
             } elseif ($inputScriptSigMethod instanceof MultiSigScript) {
                 // Take signatures from MultiSigScript object
@@ -397,15 +428,16 @@ class Transaction
                 $input->setScriptSig($scriptSig);
             }
 
-            if (!$scriptSig) {
+            if (!$scriptSig && !$input->hasWitnessData()) {
                 throw new TransactionInputSignException(
                     sprintf('No signature available for input # %d (index: %d)', $inputNum + 1, $inputNum),
                     $inputNum
                 );
             }
 
-            $serialized->append(VarInt::Int2Bin($scriptSig->buffer->len()));
-            $serialized->append($scriptSig->buffer);
+            $scriptSigBuffer = $scriptSig ? $scriptSig->buffer : new Buffer();
+            $serialized->append(VarInt::Int2Bin($scriptSigBuffer->len()));
+            $serialized->append($scriptSigBuffer);
 
             // 4-byte Sequence Number
             $serialized->appendUInt32LE($input->seqNo);

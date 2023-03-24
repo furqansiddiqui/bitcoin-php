@@ -50,7 +50,7 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
     public function p2pkh(): P2PKH_Address
     {
         $rawP2PKH = (new Buffer($this->hash160->raw()))->prependUInt8($this->btc->network->p2pkh_prefix);
-        return new P2PKH_Address($this->btc, $this->btc->bip32->base58->checkEncode($rawP2PKH));
+        return new P2PKH_Address($this->btc, $this->btc->bip32->base58->checkEncode($rawP2PKH), publicKey: $this);
     }
 
     /**
@@ -59,7 +59,7 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
      */
     public function bech32_p2wpkh(): Bech32_P2WPKH_Address
     {
-        return new Bech32_P2WPKH_Address($this->btc, $this->btc->bech32->encode($this->hash160));
+        return new Bech32_P2WPKH_Address($this->btc, $this->btc->bech32->encode($this->hash160), publicKey: $this);
     }
 
     /**
@@ -92,6 +92,6 @@ class PublicKey extends \FurqanSiddiqui\BIP32\KeyPair\PublicKey
             ->getScript();
 
         $p2sh = $this->btc->address->fromRedeemScript($redeemScript);
-        return new P2SH_P2WPKH_Address($this->btc, $p2sh->address);
+        return new P2SH_P2WPKH_Address($this->btc, $p2sh->address, redeemScript: $redeemScript);
     }
 }
