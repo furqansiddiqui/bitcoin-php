@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Address;
 
+use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
 
@@ -23,6 +24,39 @@ use FurqanSiddiqui\Bitcoin\Script\Script;
  */
 class P2SH_Address extends AbstractBase58Address
 {
+    private ?Script $redeemScript;
+
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
+     * @param string $address
+     * @param bool $prefixCheck
+     * @param \FurqanSiddiqui\Bitcoin\Script\Script|null $redeemScript
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
+    public function __construct(Bitcoin $btc, string $address, bool $prefixCheck = true, ?Script $redeemScript = null)
+    {
+        parent::__construct($btc, $address, $prefixCheck);
+        $this->redeemScript = $redeemScript;
+    }
+
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Script\Script $redeemScript
+     * @return $this
+     */
+    public function setRedeemScript(Script $redeemScript): static
+    {
+        $this->redeemScript = $redeemScript;
+        return $this;
+    }
+
+    /**
+     * @return \FurqanSiddiqui\Bitcoin\Script\Script|null
+     */
+    public function getRedeemScript(): ?Script
+    {
+        return $this->redeemScript;
+    }
+
     /**
      * @return void
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException

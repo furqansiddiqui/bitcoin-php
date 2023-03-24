@@ -19,6 +19,7 @@ use Comely\Buffer\Buffer;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
  * Class Bech32Address
@@ -33,11 +34,12 @@ class Bech32Address extends AbstractPaymentAddress
     /**
      * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      * @param string $address
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey|null $publicKey
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
      */
-    public function __construct(Bitcoin $btc, string $address)
+    public function __construct(Bitcoin $btc, string $address, ?PublicKey $publicKey = null)
     {
-        parent::__construct($btc, $address);
+        parent::__construct($btc, $address, $publicKey);
 
         try {
             $decoded = $this->btc->bech32->decode($address);

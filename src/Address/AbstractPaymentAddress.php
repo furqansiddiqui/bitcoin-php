@@ -17,6 +17,7 @@ namespace FurqanSiddiqui\Bitcoin\Address;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
  * Class AbstractPaymentAddress
@@ -27,11 +28,13 @@ abstract class AbstractPaymentAddress
     /**
      * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      * @param string $address
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey|null $publicKey
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
      */
     public function __construct(
         protected readonly Bitcoin $btc,
-        public readonly string     $address
+        public readonly string     $address,
+        public ?PublicKey          $publicKey = null,
     )
     {
         if (!$this->address) {

@@ -18,6 +18,7 @@ use Comely\Buffer\Bytes20;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
 use FurqanSiddiqui\Bitcoin\Script\Script;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
  * Class P2PKH_Address
@@ -28,9 +29,16 @@ class P2PKH_Address extends AbstractBase58Address
     /** @var \Comely\Buffer\Bytes20 */
     private readonly Bytes20 $hash160;
 
-    public function __construct(Bitcoin $btc, string $address, bool $prefixCheck = true)
+    /**
+     * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
+     * @param string $address
+     * @param bool $prefixCheck
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey|null $publicKey
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
+     */
+    public function __construct(Bitcoin $btc, string $address, bool $prefixCheck = true, ?PublicKey $publicKey = null)
     {
-        parent::__construct($btc, $address, $prefixCheck);
+        parent::__construct($btc, $address, $prefixCheck, $publicKey);
         $this->hash160 = new Bytes20(substr($this->raw->raw(), 1));
     }
 

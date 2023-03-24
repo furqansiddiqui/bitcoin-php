@@ -18,6 +18,7 @@ use Comely\Buffer\AbstractByteArray;
 use Comely\Buffer\BigInteger\LittleEndian;
 use FurqanSiddiqui\Bitcoin\Bitcoin;
 use FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException;
+use FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey;
 
 /**
  * Class AbstractBase58Address
@@ -32,11 +33,12 @@ abstract class AbstractBase58Address extends AbstractPaymentAddress
      * @param \FurqanSiddiqui\Bitcoin\Bitcoin $btc
      * @param string $address
      * @param bool $prefixCheck
+     * @param \FurqanSiddiqui\Bitcoin\Wallets\KeyPair\PublicKey|null $publicKey
      * @throws \FurqanSiddiqui\Bitcoin\Exception\PaymentAddressException
      */
-    public function __construct(Bitcoin $btc, string $address, bool $prefixCheck = true)
+    public function __construct(Bitcoin $btc, string $address, bool $prefixCheck = true, ?PublicKey $publicKey = null)
     {
-        parent::__construct($btc, $address);
+        parent::__construct($btc, $address, $publicKey);
 
         try {
             $this->raw = $this->btc->bip32->base58->checkDecode($address);
