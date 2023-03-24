@@ -70,6 +70,7 @@ class Bitcoin extends AbstractNetworkConfig
      * @param string $base58Charset
      * @param bool $base58CaseSensitive
      * @param string $signedMessagePrefix
+     * @param string $bech32Charset
      * @param int $bech32Witness
      * @param string $bech32HRP
      * @return static

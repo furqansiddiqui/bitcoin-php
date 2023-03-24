@@ -14,10 +14,25 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\Bitcoin\Address;
 
+use FurqanSiddiqui\Bitcoin\Script\Script;
+
 /**
  * Class Bech32_P2WPKH_Address
  * @package FurqanSiddiqui\Bitcoin\Address
  */
 class Bech32_P2WPKH_Address extends Bech32Address
 {
+    /**
+     * @return \FurqanSiddiqui\Bitcoin\Script\Script
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptDecodeException
+     * @throws \FurqanSiddiqui\Bitcoin\Exception\ScriptParseException
+     */
+    public function scriptPubKey(): Script
+    {
+        $opCode = $this->btc->scripts->new()
+            ->OP_0()
+            ->PUSHDATA($this->raw);
+
+        return $opCode->getScript();
+    }
 }

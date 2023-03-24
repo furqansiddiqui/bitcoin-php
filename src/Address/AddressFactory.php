@@ -105,8 +105,8 @@ class AddressFactory
      */
     public function fromRedeemScript(Script $redeemScript): P2SH_Address
     {
-        $raw = $redeemScript->buffer->copy()
+        $raw2 = (new Buffer($this->btc->network->hash160($redeemScript->buffer)->raw()))
             ->prependUInt8($this->btc->network->p2sh_prefix);
-        return new P2SH_Address($this->btc, $this->btc->bip32->base58->checkEncode($raw));
+        return new P2SH_Address($this->btc, $this->btc->bip32->base58->checkEncode($raw2));
     }
 }
